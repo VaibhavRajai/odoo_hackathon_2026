@@ -1,70 +1,58 @@
-import prisma from "../../config/prisma";
+import prisma from "../../config/prisma.js";
 
 /**
- * @desc    Create a new vehicle in the database
- * @param   {Object} vehicleData - Vehicle information
- * @returns {Promise<Object>} Created vehicle
+ * Find a vehicle by its unique registration number.
+ *
+ * Used before vehicle creation to check whether another vehicle
+ * with the same registration number already exists.
+ *
+ * @param {string} registrationNumber - Unique vehicle registration number.
+ * @returns {Promise<Object|null>} Matching vehicle or null if not found.
  */
-export const createVehicle = async (vehicleData) => {
-  return prisma.vehicle.create({
-    data: vehicleData,
-  });
-};
-
-/**
- * @desc    Find a vehicle by registration number
- * @param   {String} registrationNumber - Unique vehicle registration number
- * @returns {Promise<Object|null>} Vehicle if found, otherwise null
- */
-export const findVehicleByRegistrationNumber = async (
-  registrationNumber
-) => {
+export async function findVehicleByRegistrationNumber(registrationNumber) {
   return prisma.vehicle.findUnique({
     where: {
       registrationNumber,
     },
   });
-};
+}
 
 /**
- * @desc    Get all vehicles from the database
- * @returns {Promise<Array>} List of vehicles
+ * Create a new vehicle in the database.
+ *
+ * This repository function only performs the database operation.
+ * Business rules such as default vehicle status and duplicate
+ * registration checks are handled by the service layer.
+ *
+ * @param {Object} vehicleData - Validated vehicle data.
+ * @returns {Promise<Object>} Newly created vehicle.
  */
-export const findAllVehicles = async () => {
+export async function createVehicle(vehicleData) {
+  return prisma.vehicle.create({
+    data: vehicleData,
+  });
+}
+
+/**
+ * Retrieve vehicles from the master vehicle registry.
+ *
+ * Supports optional filtering by:
+ * - Vehicle type
+ * - Vehicle status
+ * - Registration number search
+ *
+ * The filter object is prepared by the service layer and passed
+ * to this repository for database execution.
+ *
+ * @param {Object} where - Prisma filtering conditions.
+ * @returns {Promise<Array>} List of matching vehicles.
+ */
+export async function findVehicles(where = {}) {
   return prisma.vehicle.findMany({
+    where,
+
     orderBy: {
       createdAt: "desc",
     },
   });
-};
-
-/**
- * @desc    Find a vehicle by its unique ID
- * @param   {String} vehicleId - Vehicle ID
- * @returns {Promise<Object|null>} Vehicle if found, otherwise null
- */
-export const findVehicleById = async (vehicleId) => {
-  return prisma.vehicle.findUnique({
-    where: {
-      id: vehicleId,
-    },
-  });
-};
-
-/**
- * @desc    Update an existing vehicle
- * @param   {String} vehicleId - Vehicle ID
- * @param   {Object} vehicleData - Fields to update
- * @returns {Promise<Object>} Updated vehicle
- */
-export const updateVehicleById = async (
-  vehicleId,
-  vehicleData
-) => {
-  return prisma.vehicle.update({
-    where: {
-      id: vehicleId,
-    },
-    data: vehicleData,
-  });
-};
+}
