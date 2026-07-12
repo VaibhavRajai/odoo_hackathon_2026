@@ -54,16 +54,19 @@ export async function getVehicles(req, res, next) {
      *
      * The service decides how the filters should be interpreted.
      */
-    const vehicles = await vehicleService.getVehicles({
+    const result = await vehicleService.getVehicles({
       type: req.query.type,
       status: req.query.status,
       search: req.query.search,
+      page: req.query.page,
+      limit: req.query.limit,
     });
 
     return res.status(200).json({
       success: true,
-      count: vehicles.length,
-      data: vehicles,
+      count: result.vehicles.length,
+      pagination: result.pagination,
+      data: result.vehicles,
     });
   } catch (error) {
     next(error);

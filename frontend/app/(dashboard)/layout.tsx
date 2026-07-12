@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { apiFetch } from "../api-client";
 import { useTheme } from "../theme-provider";
-import { LogOut, User as UserIcon, Shield, Layers, Calendar, BarChart2, Sun, Moon, Menu, X, Truck } from "lucide-react";
+import { LogOut, User as UserIcon, Shield, Layers, Calendar, BarChart2, Sun, Moon, Menu, X, Truck, Wrench } from "lucide-react";
 
 interface UserSession {
   userId: string;
@@ -132,18 +132,18 @@ export default function DashboardLayout({
             </a>
           )}
 
-          <a
-            href="#"
-            className="flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/30 hover:text-zinc-900 dark:hover:text-white transition-colors"
-          >
-            <BarChart2 className="h-4 w-4" /> Telemetry Reports
-          </a>
-          <a
-            href="#"
-            className="flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/30 hover:text-zinc-900 dark:hover:text-white transition-colors"
-          >
-            <Calendar className="h-4 w-4" /> Operations Log
-          </a>
+          {user.role === "Fleet Manager" && (
+            <a
+              href="/dashboard/fleet-manager/maintenance"
+              className={`flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors ${
+                pathname === "/dashboard/fleet-manager/maintenance"
+                  ? "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-900 dark:text-white font-semibold"
+                  : "text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/30 hover:text-zinc-900 dark:hover:text-white"
+              }`}
+            >
+              <Wrench className={`h-4 w-4 ${pathname === "/dashboard/fleet-manager/maintenance" ? "text-amber-500" : ""}`} /> Maintenance
+            </a>
+          )}
         </nav>
       </div>
 
