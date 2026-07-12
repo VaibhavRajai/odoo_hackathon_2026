@@ -10,11 +10,14 @@ const redis = new IORedis({
   password: process.env.REDIS_PASSWORD || undefined,
   db: parseInt(process.env.REDIS_DB || "0", 10),
   lazyConnect: true,
+  maxRetriesPerRequest: null,   // Don't throw — queue commands until Redis reconnects
   retryStrategy(times) {
-    const delay = Math.min(times * 100, 3000);
-    return delay;
+    if (times > 10) {
+      console.error("[Redis] Giving up after 10 reconnect attempts. Is Redis running?");
+      return null; // Stop retrying after 10 attempts
+    }
+    return Math.min(times * 200, 3000); // Exponential backoff, max 3s
   },
-  maxRetriesPerRequest: 3,
 });
 
 redis.on("connect", () => {
