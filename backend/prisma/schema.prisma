@@ -1,5 +1,5 @@
 // TransitOps — Prisma Schema
-// Roles: Fleet Manager | Driver | Safety Officer | Financial Analyst
+// Roles: Fleet Manager | Dispatcher | Safety Officer | Financial Analyst
 
 generator client {
   provider = "prisma-client-js"
@@ -10,7 +10,7 @@ datasource db {
 }
 
 // ─── Role ────────────────────────────────────────────────────────────────────
-// Pre-seeded. One of: Fleet Manager, Driver, Safety Officer, Financial Analyst.
+// Pre-seeded. One of: Fleet Manager, Dispatcher, Safety Officer, Financial Analyst.
 model Role {
   id    String @id @default(cuid())
   name  String @unique

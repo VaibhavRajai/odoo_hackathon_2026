@@ -171,7 +171,7 @@ export default function ForgotPasswordPage() {
         {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
       </button>
 
-      <div className="w-full max-w-md space-y-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-8 backdrop-blur-xl shadow-2xl transition-all duration-200">
+      <div className="w-full max-w-md space-y-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-6 sm:p-8 backdrop-blur-xl shadow-2xl transition-all duration-200">
         
         {/* Title Block */}
         <div className="text-center">
@@ -220,7 +220,7 @@ export default function ForgotPasswordPage() {
               >
                 <span>
                   {selectedAccount
-                    ? `${selectedAccount.name} (${selectedAccount.role})`
+                    ? `${selectedAccount.role} — ${selectedAccount.email}`
                     : "Select pre-seeded account..."}
                 </span>
                 <span className="text-zinc-500">▼</span>
@@ -255,7 +255,7 @@ export default function ForgotPasswordPage() {
                         >
                           <div className="font-semibold">{acc.name}</div>
                           <div className="text-xs text-zinc-550 dark:text-zinc-400 group-hover:text-zinc-300">
-                            {acc.role} &bull; {acc.email}
+                            {acc.role} — {acc.email}
                           </div>
                         </button>
                       ))

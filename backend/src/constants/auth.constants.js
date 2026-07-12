@@ -49,7 +49,7 @@ export const REDIS_KEY_OTP = (userId) => `otp:${userId}`;
  */
 export const ROLE_DASHBOARD = {
   "Fleet Manager": "/dashboard/fleet-manager",
-  "Driver": "/dashboard/driver",
+  "Dispatcher": "/dashboard/dispatcher",
   "Safety Officer": "/dashboard/safety-officer",
   "Financial Analyst": "/dashboard/financial-analyst",
 };

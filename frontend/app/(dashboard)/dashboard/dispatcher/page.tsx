@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "../../../api-client";
-import { Navigation, Clock, ShieldAlert, Award } from "lucide-react";
+import { Navigation, Clock, ShieldAlert, Users, Award, MapPin } from "lucide-react";
 
-export default function DriverDashboard() {
+export default function DispatcherDashboard() {
   const [name, setName] = useState("");
 
   useEffect(() => {
@@ -24,17 +24,17 @@ export default function DriverDashboard() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">Driver Control Console</h1>
-        <p className="text-zinc-550 dark:text-zinc-400 mt-2">Welcome back, {name || "Driver"}. Drive safely and log your hours.</p>
+        <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">Dispatcher Control Console</h1>
+        <p className="text-zinc-550 dark:text-zinc-400 mt-2">Welcome back, {name || "Dispatcher"}. Manage active route coordinates and dispatches.</p>
       </div>
 
-      {/* Driver status blocks */}
+      {/* Dispatcher status blocks */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Assigned Vehicle", value: "Transit Bus VT-902", change: "Route A-10", icon: Navigation, color: "text-blue-600 dark:text-blue-500 bg-blue-500/10 border-blue-500/20" },
-          { label: "Active Shift Time", value: "3h 45m", change: "Shift ends in 4h 15m", icon: Clock, color: "text-emerald-600 dark:text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
-          { label: "Safety Alerts", value: "0 Active", change: "System reports all green", icon: ShieldAlert, color: "text-purple-600 dark:text-purple-500 bg-purple-500/10 border-purple-500/20" },
-          { label: "Eco-Drive Score", value: "96 / 100", change: "Excellent accelerator control", icon: Award, color: "text-amber-600 dark:text-amber-500 bg-amber-500/10 border-amber-500/20" },
+          { label: "Active Dispatches", value: "14 / 16", change: "2 pending approval", icon: Navigation, color: "text-blue-600 dark:text-blue-500 bg-blue-500/10 border-blue-500/20" },
+          { label: "On-Time Dispatch Rate", value: "98.4%", change: "+0.5% today", icon: Clock, color: "text-emerald-600 dark:text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+          { label: "Active Drivers", value: "32", change: "All checked in", icon: Users, color: "text-purple-600 dark:text-purple-500 bg-purple-500/10 border-purple-500/20" },
+          { label: "Route Score", value: "94 / 100", change: "High traffic warnings on Route 5", icon: MapPin, color: "text-amber-600 dark:text-amber-500 bg-amber-500/10 border-amber-500/20" },
         ].map((item, idx) => (
           <div key={idx} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-6 backdrop-blur-sm shadow-sm transition-colors duration-200">
             <div className="flex items-center justify-between">
@@ -51,11 +51,11 @@ export default function DriverDashboard() {
         ))}
       </div>
 
-      {/* Driver Shifts and Operations */}
+      {/* Dispatcher Sheets and Operations */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Next Route Sheet */}
         <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 p-6 backdrop-blur-sm transition-colors duration-200">
-          <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">Assigned Waypoints</h2>
+          <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">Assigned Waypoints & Destinations</h2>
           <div className="space-y-4">
             {[
               { stop: "Terminal 1 Main Depot", time: "10:15 AM", status: "Completed", statusCol: "text-emerald-600 dark:text-emerald-450 bg-emerald-500/10 border-emerald-500/20" },
@@ -65,7 +65,7 @@ export default function DriverDashboard() {
               <div key={idx} className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 transition-colors">
                 <div>
                   <div className="font-semibold text-zinc-900 dark:text-white text-sm">{wp.stop}</div>
-                  <span className="text-xs text-zinc-500">Scheduled: {wp.time}</span>
+                  <span className="text-xs text-zinc-550">Scheduled: {wp.time}</span>
                 </div>
                 <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${wp.statusCol}`}>
                   {wp.status}
@@ -77,19 +77,19 @@ export default function DriverDashboard() {
 
         {/* Safety logbook */}
         <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 p-6 backdrop-blur-sm transition-colors duration-200">
-          <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">Shift Compliance Log</h2>
+          <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">Dispatch Compliance & Duty Logs</h2>
           <div className="space-y-3.5">
             <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 flex items-center justify-between text-sm transition-colors">
-              <span className="text-zinc-600 dark:text-zinc-400">Rest Break Verification</span>
+              <span className="text-zinc-650 dark:text-zinc-400">Operator Schedule Verification</span>
               <span className="text-emerald-600 dark:text-emerald-450 font-semibold">Compliant</span>
             </div>
             <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 flex items-center justify-between text-sm transition-colors">
-              <span className="text-zinc-600 dark:text-zinc-400">Pre-Trip Inspection Checklist</span>
-              <span className="text-emerald-600 dark:text-emerald-450 font-semibold">Submitted</span>
+              <span className="text-zinc-650 dark:text-zinc-400">Pre-Trip Dispatch Checklists</span>
+              <span className="text-emerald-600 dark:text-emerald-450 font-semibold">Approved</span>
             </div>
             <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 flex items-center justify-between text-sm transition-colors">
-              <span className="text-zinc-600 dark:text-zinc-400">Duty Status Code</span>
-              <span className="text-blue-600 dark:text-blue-450 font-semibold">ON-DUTY (Driving)</span>
+              <span className="text-zinc-650 dark:text-zinc-400">Active Shift Code</span>
+              <span className="text-blue-600 dark:text-blue-450 font-semibold">DISPATCH-ON</span>
             </div>
           </div>
         </div>
