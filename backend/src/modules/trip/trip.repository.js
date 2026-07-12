@@ -16,3 +16,15 @@ export async function findTrips(where = {}) {
 export async function findTripById(id) {
   return prisma.trip.findUnique({ where: { id }, include });
 }
+
+export async function createTrip(data) {
+  return prisma.trip.create({ data, include });
+}
+
+export async function findVehicleById(id) {
+  return prisma.vehicle.findUnique({ where: { id } });
+}
+
+export async function findDriverById(id) {
+  return prisma.driver.findUnique({ where: { id } });
+}

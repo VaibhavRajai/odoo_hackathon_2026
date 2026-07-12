@@ -70,6 +70,7 @@ model Vehicle {
 
   trips               Trip[]
   maintenances        Maintenance[]
+  fuelLogs            FuelLog[]
 
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
@@ -175,8 +176,8 @@ enum TripStatus {
 /**
  * Trip
  *
- * Minimal scaffold — read-only for the Safety Officer module.
- * The Dispatcher module owns creation, dispatch, and completion logic.
+ * Owned by the Dispatcher module: create/dispatch/complete/cancel. The
+ * Safety Officer module reads it read-only for the driver detail/trips views.
  */
 model Trip {
   id              String     @id @default(uuid())
@@ -194,10 +195,36 @@ model Trip {
   updatedAt       DateTime   @updatedAt
 
   safetyRating    SafetyRating?
+  fuelLogs        FuelLog[]
 
   @@index([status])
   @@index([driverId])
   @@index([vehicleId])
+}
+
+/**
+ * FuelLog
+ *
+ * Fuel purchase/consumption record for a vehicle, optionally tied to the
+ * trip it was logged during (e.g. on trip completion).
+ */
+model FuelLog {
+  id        String   @id @default(uuid())
+  liters    Float
+  cost      Float
+  date      DateTime @default(now())
+
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id])
+
+  tripId    String?
+  trip      Trip?    @relation(fields: [tripId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vehicleId])
+  @@map("fuel_logs")
 }
 
 /**

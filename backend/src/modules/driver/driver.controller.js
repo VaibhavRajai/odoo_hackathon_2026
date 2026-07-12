@@ -27,6 +27,21 @@ export async function getDrivers(req, res, next) {
   }
 }
 
+/**
+ * Drivers eligible for trip assignment: AVAILABLE status AND not suspended/expired.
+ * This is the endpoint the Dispatcher's trip-create form reads from —
+ * `isEligible` is computed the same way everywhere (driver.service.js).
+ */
+export async function getAvailableDrivers(req, res, next) {
+  try {
+    const drivers = await driverService.getDrivers({ status: "AVAILABLE" });
+    const eligible = drivers.filter((d) => d.isEligible);
+    return res.status(200).json({ success: true, count: eligible.length, data: eligible });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getDriverById(req, res, next) {
   try {
     const driver = await driverService.getDriverById(req.params.id);

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "../../../api-client";
-import { Truck, Wrench, ChevronRight, Settings } from "lucide-react";
+import { Truck, Wrench, ChevronRight } from "lucide-react";
 
 export default function FleetManagerOverview() {
   const [userName, setUserName] = useState("");

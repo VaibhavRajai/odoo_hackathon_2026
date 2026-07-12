@@ -1,4 +1,5 @@
 import * as tripRepository from "./trip.repository.js";
+import * as tripService from "./trip.service.js";
 
 const VALID_STATUSES = ["DRAFT", "DISPATCHED", "COMPLETED", "CANCELLED"];
 
@@ -39,6 +40,50 @@ export async function getTripById(req, res, next) {
       return res.status(404).json({ success: false, message: "Trip not found." });
     }
     return res.status(200).json({ success: true, data: trip });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/** @route POST /api/trips — create a Draft trip. Dispatcher/Fleet Manager. */
+export async function createTrip(req, res, next) {
+  try {
+    const trip = await tripService.createTrip(req.body);
+    return res.status(201).json({ success: true, message: "Trip created.", data: trip });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/** @route POST /api/trips/:id/dispatch — Draft -> Dispatched, locks vehicle+driver. */
+export async function dispatchTrip(req, res, next) {
+  try {
+    const trip = await tripService.dispatchTrip(req.params.id);
+    return res.status(200).json({ success: true, message: "Trip dispatched.", data: trip });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/** @route POST /api/trips/:id/complete — Dispatched -> Completed, frees vehicle+driver. */
+export async function completeTrip(req, res, next) {
+  try {
+    const trip = await tripService.completeTrip(req.params.id, {
+      finalOdometer: req.body.finalOdometer,
+      fuelLiters: req.body.fuelLiters,
+      fuelCost: req.body.fuelCost,
+    });
+    return res.status(200).json({ success: true, message: "Trip completed.", data: trip });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/** @route POST /api/trips/:id/cancel — Draft/Dispatched -> Cancelled, frees vehicle+driver if locked. */
+export async function cancelTrip(req, res, next) {
+  try {
+    const trip = await tripService.cancelTrip(req.params.id);
+    return res.status(200).json({ success: true, message: "Trip cancelled.", data: trip });
   } catch (error) {
     next(error);
   }

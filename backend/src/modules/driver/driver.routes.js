@@ -3,6 +3,7 @@ import { authenticate, requireRole } from "../../middleware/authenticate.js";
 import {
   createDriver,
   getDrivers,
+  getAvailableDrivers,
   getDriverById,
   updateDriver,
   updateDriverStatus,
@@ -18,6 +19,9 @@ const router = express.Router();
 
 /** GET /api/drivers/stats — Safety Officer dashboard KPIs. */
 router.get("/stats", authenticate, requireRole("Safety Officer"), getDashboardStats);
+
+/** GET /api/drivers/available — eligible drivers for the Dispatcher's trip-create form. */
+router.get("/available", authenticate, requireRole("Dispatcher", "Fleet Manager"), getAvailableDrivers);
 
 /** POST /api/drivers/validate-licenses — sweep + auto-suspend expired licenses. */
 router.post("/validate-licenses", authenticate, requireRole("Safety Officer"), validateLicenses);
