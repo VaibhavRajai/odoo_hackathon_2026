@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRouter from "./modules/auth/auth.routes.js";
-import vehicleRouter from "./modules/vehicles/vehicle.routes.js"
+import vehicleRouter from "./modules/vehicle/vehicle.routes.js";
 
 const app = express();
 
@@ -35,11 +35,11 @@ app.use((_req, res) => {
 // ─── Global Error Handler ────────────────────────────────────────────────────
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
-  const status = err.status || 500;
-  const message = err.status ? err.message : "An unexpected error occurred. Please try again later.";
+  const status = err.status || err.statusCode || 500;
+  const message = (err.status || err.statusCode) ? err.message : "An unexpected error occurred. Please try again later.";
 
   // Never leak internal error details in production
-  if (!err.status || err.status >= 500) {
+  if (!err.status && !err.statusCode) {
     console.error("[App] Unhandled error:", err);
   }
 

@@ -89,8 +89,9 @@ export async function me(req, res) {
 export async function forgotPassword(req, res) {
   const { email } = req.body;
 
-  if (!email) {
-    return res.status(400).json({ success: false, message: "Email is required." });
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9]+([.-]?[a-zA-Z0-9]+)*\.[a-zA-Z]{2,63}$/;
+  if (!email || !emailRegex.test(email.trim())) {
+    return res.status(400).json({ success: false, message: "Please enter a valid email address." });
   }
 
   await AuthService.forgotPassword(email);

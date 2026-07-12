@@ -91,6 +91,19 @@ export async function registerVehicle(vehicleData) {
     registrationNumber.trim().toUpperCase();
 
   /**
+   * Validate registration number format using regex.
+   * Format: 2 letters (state), 2 digits (RTO), 1-2 letters (series), 4 digits (number)
+   */
+  const regRegex = /^[A-Z]{2}\d{2}[A-Z]{1,2}\d{4}$/;
+  if (!regRegex.test(normalizedRegistrationNumber)) {
+    const error = new Error(
+      "Registration number must follow the format (e.g. GJ01AB7432) and end with exactly 4 digits."
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  /**
    * Check whether the registration number already exists.
    *
    * The problem statement explicitly requires vehicle

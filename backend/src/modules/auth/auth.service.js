@@ -35,6 +35,17 @@ export async function getAccounts() {
  * @returns {Promise<{ sessionId: string, user: object, dashboardPath: string }>}
  */
 export async function login({ email, password }) {
+  // Validate email format (strict RFC 5322 compliant regex)
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9]+([.-]?[a-zA-Z0-9]+)*\.[a-zA-Z]{2,63}$/;
+  if (!email || !emailRegex.test(email.trim())) {
+    throw Object.assign(new Error("Please enter a valid email address."), { status: 400 });
+  }
+
+  // Validate password presence
+  if (!password || password.trim().length === 0) {
+    throw Object.assign(new Error("Password is required."), { status: 400 });
+  }
+
   // 1. Check account lock first
   const lock = await isAccountLocked(email);
   if (lock.locked) {
