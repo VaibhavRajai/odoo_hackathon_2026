@@ -4,6 +4,7 @@ import {
   createMaintenance,
   getMaintenanceRecords,
   closeMaintenanceRecord,
+  updateMaintenanceRecord,
 } from "./maintenance.controller.js";
 
 const router = express.Router();
@@ -57,6 +58,18 @@ router.patch(
   authenticate,
   requireRole("Fleet Manager"),
   closeMaintenanceRecord
+);
+
+/**
+ * @route   PUT /api/maintenance/:id
+ * @desc    Update any field of a maintenance record at any time
+ * @access  Private — Fleet Manager only
+ */
+router.put(
+  "/:id",
+  authenticate,
+  requireRole("Fleet Manager"),
+  updateMaintenanceRecord
 );
 
 export default router;
