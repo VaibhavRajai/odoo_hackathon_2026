@@ -1,13 +1,20 @@
-const http = require('http');
+import "dotenv/config";
+import app from "./src/app.js";
+import redis from "./src/config/redis.js";
 
 const PORT = process.env.PORT || 5000;
 
-const server = http.createServer((req, res) => {
-  res.statusCode = 200;
-  res.setHeader('Content-Type', 'text/plain');
-  res.end('Backend is running!\n');
+app.listen(PORT, () => {
+  console.info(`[TransitOps] Server running on http://localhost:${PORT}`);
 });
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Graceful shutdown
+process.on("SIGTERM", async () => {
+  await redis.quit();
+  process.exit(0);
+});
+
+process.on("SIGINT", async () => {
+  await redis.quit();
+  process.exit(0);
 });
