@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../../../api-client";
 import { MapPin, Truck, CheckCircle2, ChevronLeft, Loader2, Weight } from "lucide-react";
+import { LocationInput } from "../../../../components/LocationInput";
 
 interface Vehicle {
   id: string;
@@ -59,11 +60,11 @@ export default function CreateTripPage() {
     setError("");
     try {
       // 1. Geocode Source
-      const srcRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(source)}&format=json&limit=1`);
+      const srcRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(source)}&format=json&limit=1&countrycodes=in`);
       const srcData = await srcRes.json();
       
       // 2. Geocode Destination
-      const destRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(destination)}&format=json&limit=1`);
+      const destRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(destination)}&format=json&limit=1&countrycodes=in`);
       const destData = await destRes.json();
 
       if (!srcData.length || !destData.length) {
@@ -211,36 +212,24 @@ export default function CreateTripPage() {
         <form onSubmit={handleCreateTrip} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Source */}
-            <div className="space-y-2">
-              <label className="flex items-center text-sm font-medium text-gray-700 dark:text-zinc-300">
-                <MapPin className="w-4 h-4 mr-2 text-blue-500" /> Source Location
-              </label>
-              <input 
-                required 
-                type="text" 
-                placeholder="e.g. New York, NY"
-                className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none shadow-sm"
-                value={source} 
-                onChange={e => setSource(e.target.value)}
-                onBlur={calculateDistance}
-              />
-            </div>
+            <LocationInput
+              label="Source Location"
+              placeholder="e.g. New York, NY"
+              value={source}
+              onChange={setSource}
+              onSelect={calculateDistance}
+              iconColor="text-blue-500"
+            />
 
             {/* Destination */}
-            <div className="space-y-2">
-              <label className="flex items-center text-sm font-medium text-gray-700 dark:text-zinc-300">
-                <MapPin className="w-4 h-4 mr-2 text-red-500" /> Destination
-              </label>
-              <input 
-                required 
-                type="text" 
-                placeholder="e.g. Boston, MA"
-                className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none shadow-sm"
-                value={destination} 
-                onChange={e => setDestination(e.target.value)}
-                onBlur={calculateDistance}
-              />
-            </div>
+            <LocationInput
+              label="Destination"
+              placeholder="e.g. Boston, MA"
+              value={destination}
+              onChange={setDestination}
+              onSelect={calculateDistance}
+              iconColor="text-red-500"
+            />
 
             {/* Distance (Auto) */}
             <div className="space-y-2 md:col-span-2 bg-gray-50 dark:bg-zinc-900 p-4 rounded-lg border border-gray-200 dark:border-zinc-800 flex items-center justify-between">
