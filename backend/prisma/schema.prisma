@@ -42,6 +42,27 @@ enum VehicleStatus {
   RETIRED
 }
 
+/**
+ * Represents the operational status of a vehicle.
+ *
+ * AVAILABLE - Vehicle can be assigned to a trip.
+ * ON_TRIP   - Vehicle is currently assigned to an active trip.
+ * IN_SHOP   - Vehicle is currently under maintenance.
+ * RETIRED   - Vehicle is permanently removed from active operations.
+ */
+enum VehicleStatus {
+  AVAILABLE
+  ON_TRIP
+  IN_SHOP
+  RETIRED
+}
+
+/**
+ * Vehicle
+ *
+ * Stores the master registry of all vehicles managed by TransitOps.
+ * Registration number is globally unique within the organization.
+ */
 model Vehicle {
   id                  String        @id @default(uuid())
   registrationNumber  String        @unique
@@ -54,4 +75,7 @@ model Vehicle {
 
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
+
+  @@index([type])
+  @@index([status])
 }
