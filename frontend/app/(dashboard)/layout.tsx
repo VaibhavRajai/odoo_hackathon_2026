@@ -81,12 +81,18 @@ export default function DashboardLayout({
         {/* Logo / Branding */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.2)]">
-              <Shield className="h-5 w-5" />
-            </div>
+            <img
+              src="/logo-light.png"
+              alt="TransitOps Logo"
+              className="h-10 w-auto object-contain dark:hidden"
+            />
+            <img
+              src="/logo-dark.png"
+              alt="TransitOps Logo"
+              className="h-10 w-auto object-contain hidden dark:block"
+            />
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white leading-none">TransitOps</h1>
-              <span className="text-[10px] text-zinc-500 font-semibold tracking-wider uppercase">Telemetry Hub</span>
+              <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white font-sans">TransitOps</h1>
             </div>
           </div>
           {/* Mobile drawer close button */}
@@ -193,10 +199,17 @@ export default function DashboardLayout({
               <Menu className="h-6 w-6" />
             </button>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded bg-blue-600 text-white">
-                <Shield className="h-4 w-4" />
-              </div>
-              <span className="text-sm font-bold text-zinc-900 dark:text-white">TransitOps</span>
+              <img
+                src="/logo-light.png"
+                alt="TransitOps Logo"
+                className="h-8 w-auto object-contain dark:hidden"
+              />
+              <img
+                src="/logo-dark.png"
+                alt="TransitOps Logo"
+                className="h-8 w-auto object-contain hidden dark:block"
+              />
+              <span className="text-lg font-bold text-zinc-900 dark:text-white font-sans">TransitOps</span>
             </div>
           </div>
           
