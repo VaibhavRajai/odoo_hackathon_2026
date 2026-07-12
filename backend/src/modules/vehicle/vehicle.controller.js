@@ -72,3 +72,44 @@ export async function getVehicles(req, res, next) {
     next(error);
   }
 }
+
+/**
+ * Delete a vehicle.
+ *
+ * @route   DELETE /api/vehicles/:id
+ * @access  Private - Fleet Manager only
+ */
+export async function deleteVehicle(req, res, next) {
+  try {
+    const { id } = req.params;
+    await vehicleService.removeVehicle(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Vehicle deleted successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Update an existing vehicle's details.
+ *
+ * @route   PUT /api/vehicles/:id
+ * @access  Private - Fleet Manager only
+ */
+export async function updateVehicle(req, res, next) {
+  try {
+    const { id } = req.params;
+    const updated = await vehicleService.editVehicle(id, req.body);
+
+    return res.status(200).json({
+      success: true,
+      message: "Vehicle updated successfully.",
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+}

@@ -375,21 +375,37 @@ async function seed() {
     console.log(`  ✔ Trip seeded: ${t.source} -> ${t.destination}`);
   }
 
-  // 3. Seed Vehicles
+  // 3. Seed Vehicles (from user request block)
   console.log("\n  Seeding Vehicles...");
   const vehicle1 = await prisma.vehicle.upsert({
-    where: { registrationNum: 'VT-902' },
+    where: { registrationNumber: 'VT-902' },
     update: {},
-    create: { registrationNum: 'VT-902', name: 'Transit Bus', type: 'Bus', maxLoadCapacity: 2500 }
+    create: {
+      registrationNumber: 'VT-902',
+      name: 'Transit Bus',
+      type: 'Bus',
+      maxLoadCapacity: 2500,
+      odometer: 1000,
+      acquisitionCost: 1500000,
+      status: 'AVAILABLE'
+    }
   });
   const vehicle2 = await prisma.vehicle.upsert({
-    where: { registrationNum: 'VT-411' },
+    where: { registrationNumber: 'VT-411' },
     update: {},
-    create: { registrationNum: 'VT-411', name: 'Cargo Van', type: 'Van', maxLoadCapacity: 1500 }
+    create: {
+      registrationNumber: 'VT-411',
+      name: 'Cargo Van',
+      type: 'Van',
+      maxLoadCapacity: 1500,
+      odometer: 12000,
+      acquisitionCost: 950000,
+      status: 'AVAILABLE'
+    }
   });
   console.log("  ✔ Vehicles seeded");
 
-  // 4. Seed DriverProfile
+  // 4. Seed DriverProfile (adapted to schema's Driver model)
   console.log("\n  Seeding DriverProfiles...");
   const driverUser = await prisma.user.findUnique({ where: { email: 'rishabhjainwork1@gmail.com' } });
   let driverProfile = null;
@@ -397,60 +413,78 @@ async function seed() {
   let driverProfile3 = null;
   
   if (driverUser) {
-    driverProfile = await prisma.driverProfile.upsert({
+    driverProfile = await prisma.driver.upsert({
       where: { licenseNumber: 'DL-84729' },
-      update: { userId: driverUser.id, status: 'Available' },
+      update: { status: 'AVAILABLE' },
       create: {
         name: driverUser.name,
         licenseNumber: 'DL-84729',
-        userId: driverUser.id,
-        status: 'Available'
+        licenseCategory: 'LMV_TR',
+        licenseExpiry: new Date('2028-12-31'),
+        contactNumber: '9876543211',
+        email: driverUser.email,
+        status: 'AVAILABLE'
       }
     });
     
-    driverProfile2 = await prisma.driverProfile.upsert({
+    driverProfile2 = await prisma.driver.upsert({
       where: { licenseNumber: 'DL-11223' },
-      update: { status: 'Available' },
+      update: { status: 'AVAILABLE' },
       create: {
         name: 'Sarah Connor',
         licenseNumber: 'DL-11223',
-        status: 'Available'
+        licenseCategory: 'HMV',
+        licenseExpiry: new Date('2029-06-30'),
+        contactNumber: '9876543212',
+        email: 'sarah.connor@example.com',
+        status: 'AVAILABLE'
       }
     });
 
-    driverProfile3 = await prisma.driverProfile.upsert({
+    driverProfile3 = await prisma.driver.upsert({
       where: { licenseNumber: 'DL-99887' },
-      update: { status: 'Available' },
+      update: { status: 'AVAILABLE' },
       create: {
         name: 'John Smith',
         licenseNumber: 'DL-99887',
-        status: 'Available'
+        licenseCategory: 'HMV',
+        licenseExpiry: new Date('2027-03-31'),
+        contactNumber: '9876543213',
+        email: 'john.smith@example.com',
+        status: 'AVAILABLE'
       }
     });
     console.log("  ✔ Driver Profiles seeded");
   }
 
-  // 5. Seed Trips
+  // 5. Seed Trips (adapted to schema's Trip model)
   console.log("\n  Seeding Trips...");
   if (driverProfile) {
-    // Check if trips exist to avoid duplicate inserts if possible, 
-    // or just rely on the fact we restart the DB
-    await prisma.trip.create({
-      data: {
+    // Check if trips exist to avoid duplicate inserts if possible
+    await prisma.trip.upsert({
+      where: { id: 'seed-trip-extra-1' },
+      update: {},
+      create: {
+        id: 'seed-trip-extra-1',
         source: 'Terminal 1 Main Depot',
         destination: 'Cargo Hub Central',
         cargoWeight: 1250,
-        status: 'Draft',
+        plannedDistance: 45,
+        status: 'DRAFT',
         vehicleId: vehicle1.id,
         driverId: driverProfile.id
       }
     });
-    await prisma.trip.create({
-      data: {
+    await prisma.trip.upsert({
+      where: { id: 'seed-trip-extra-2' },
+      update: {},
+      create: {
+        id: 'seed-trip-extra-2',
         source: 'Warehouse East',
         destination: 'Port Loading Dock B',
         cargoWeight: 850,
-        status: 'Dispatched',
+        plannedDistance: 120,
+        status: 'DISPATCHED',
         vehicleId: vehicle2.id,
         driverId: driverProfile.id
       }
@@ -459,6 +493,7 @@ async function seed() {
   }
 
   console.log("\n✅ Seeding complete.\n");
+
   console.log("  Login credentials:");
   console.log("  ──────────────────────────────────────────────────────────");
   for (const u of USERS) {

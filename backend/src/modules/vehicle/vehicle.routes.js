@@ -2,7 +2,7 @@ import express from "express";
 
 import { authenticate, requireRole } from "../../middleware/authenticate.js";
 
-import { createVehicle, getVehicles } from "./vehicle.controller.js";
+import { createVehicle, getVehicles, deleteVehicle, updateVehicle } from "./vehicle.controller.js";
 
 const router = express.Router();
 
@@ -42,5 +42,19 @@ router.post("/", authenticate, requireRole("Fleet Manager"), createVehicle);
  * GET /api/vehicles?search=GJ01
  */
 router.get("/", authenticate, getVehicles);
+
+/**
+ * @route   DELETE /api/vehicles/:id
+ * @desc    Remove a vehicle and its associated records from registry
+ * @access  Private - Fleet Manager only
+ */
+router.delete("/:id", authenticate, requireRole("Fleet Manager"), deleteVehicle);
+
+/**
+ * @route   PUT /api/vehicles/:id
+ * @desc    Update a vehicle's details
+ * @access  Private - Fleet Manager only
+ */
+router.put("/:id", authenticate, requireRole("Fleet Manager"), updateVehicle);
 
 export default router;

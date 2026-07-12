@@ -758,7 +758,7 @@ export default function MaintenancePage() {
             <button
               onClick={() => handleExport("pdf")}
               disabled={!!exporting || dashboardLoading}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 hover:bg-zinc-50 dark:hover:bg-zinc-850/60 text-zinc-700 dark:text-zinc-300 px-3.5 py-2 text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer animate-fade-in"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 px-3.5 py-2 text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer animate-fade-in"
             >
               {exporting === "pdf" ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -770,7 +770,7 @@ export default function MaintenancePage() {
             <button
               onClick={() => handleExport("excel")}
               disabled={!!exporting || dashboardLoading}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 hover:bg-zinc-50 dark:hover:bg-zinc-850/60 text-zinc-700 dark:text-zinc-300 px-3.5 py-2 text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer animate-fade-in"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 px-3.5 py-2 text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer animate-fade-in"
             >
               {exporting === "excel" ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -779,6 +779,7 @@ export default function MaintenancePage() {
               )}
               Export Excel
             </button>
+
           </div>
         </div>
 

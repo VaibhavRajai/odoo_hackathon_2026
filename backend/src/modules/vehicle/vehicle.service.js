@@ -1,4 +1,5 @@
 import * as vehicleRepository from "./vehicle.repository.js";
+import prisma from "../../config/prisma.js";
 
 /**
  * Register a new vehicle in the TransitOps vehicle registry.
@@ -54,25 +55,25 @@ export async function registerVehicle(vehicleData) {
    * Number.isFinite() ensures values such as undefined, null,
    * NaN, and Infinity are not accepted as valid vehicle data.
    */
-  if (!Number.isFinite(maxLoadCapacity) || maxLoadCapacity <= 0) {
+  if (!Number.isFinite(maxLoadCapacity) || maxLoadCapacity <= 0 || maxLoadCapacity > 30000) {
     const error = new Error(
-      "Maximum load capacity must be a number greater than 0."
+      "Maximum load capacity must be a positive number up to 30,000 kg."
     );
     error.statusCode = 400;
     throw error;
   }
 
-  if (!Number.isFinite(odometer) || odometer < 0) {
+  if (!Number.isFinite(odometer) || odometer < 0 || odometer > 1500000) {
     const error = new Error(
-      "Odometer must be a number greater than or equal to 0."
+      "Odometer must be a number between 0 and 1,500,000 km."
     );
     error.statusCode = 400;
     throw error;
   }
 
-  if (!Number.isFinite(acquisitionCost) || acquisitionCost < 0) {
+  if (!Number.isFinite(acquisitionCost) || acquisitionCost < 0 || acquisitionCost > 100000000) {
     const error = new Error(
-      "Acquisition cost must be a number greater than or equal to 0."
+      "Acquisition cost must be a number between 0 and ₹10,00,00,000."
     );
     error.statusCode = 400;
     throw error;
@@ -151,7 +152,7 @@ export async function registerVehicle(vehicleData) {
  * GET /api/vehicles?type=Van&status=AVAILABLE&search=GJ01
  *
  * @param {Object} filters - Query parameters received from the controller.
- * @returns {Promise<Array>} Matching vehicles.
+ * @returns {Promise<Object>} Matching vehicles.
  * @throws {Error} When an invalid status is provided.
  */
 export async function getVehicles(filters = {}) {
@@ -235,4 +236,143 @@ export async function getVehicles(filters = {}) {
       totalPages: Math.ceil(total / parsedLimit),
     },
   };
+}
+
+/**
+ * Remove a vehicle and its associated records from the registry.
+ *
+ * @param {string} id - Vehicle ID.
+ * @returns {Promise<Object>} The deleted vehicle.
+ * @throws {Error} When vehicle is not found.
+ */
+export async function removeVehicle(id) {
+  const vehicle = await vehicleRepository.findVehicleById(id);
+  if (!vehicle) {
+    const error = new Error("Vehicle not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Delete all maintenance records first
+  await prisma.maintenance.deleteMany({
+    where: { vehicleId: id },
+  });
+
+  return vehicleRepository.deleteVehicle(id);
+}
+
+/**
+ * Update an existing vehicle's details.
+ *
+ * @param {string} id - Vehicle ID.
+ * @param {Object} updateData - Vehicle details to update.
+ * @returns {Promise<Object>} Updated vehicle.
+ * @throws {Error} When validation or business rules fail.
+ */
+export async function editVehicle(id, updateData) {
+  const vehicle = await vehicleRepository.findVehicleById(id);
+  if (!vehicle) {
+    const error = new Error("Vehicle not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const {
+    registrationNumber,
+    name,
+    type,
+    maxLoadCapacity,
+    odometer,
+    acquisitionCost,
+    status,
+  } = updateData;
+
+  // Validate required string fields
+  if (registrationNumber !== undefined && !registrationNumber.trim()) {
+    const error = new Error("Registration number is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (name !== undefined && !name.trim()) {
+    const error = new Error("Vehicle name/model is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (type !== undefined && !type.trim()) {
+    const error = new Error("Vehicle type is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // Validate numeric fields
+  if (maxLoadCapacity !== undefined) {
+    if (!Number.isFinite(maxLoadCapacity) || maxLoadCapacity <= 0 || maxLoadCapacity > 30000) {
+      const error = new Error("Maximum load capacity must be a positive number up to 30,000 kg.");
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  if (odometer !== undefined) {
+    if (!Number.isFinite(odometer) || odometer < 0 || odometer > 1500000) {
+      const error = new Error("Odometer must be a number between 0 and 1,500,000 km.");
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  if (acquisitionCost !== undefined) {
+    if (!Number.isFinite(acquisitionCost) || acquisitionCost < 0 || acquisitionCost > 100000000) {
+      const error = new Error("Acquisition cost must be a number between 0 and ₹10,00,00,000.");
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  const payload = {};
+
+  if (name !== undefined) payload.name = name.trim();
+  if (type !== undefined) payload.type = type.trim();
+  if (maxLoadCapacity !== undefined) payload.maxLoadCapacity = maxLoadCapacity;
+  if (odometer !== undefined) payload.odometer = odometer;
+  if (acquisitionCost !== undefined) payload.acquisitionCost = acquisitionCost;
+
+  if (registrationNumber !== undefined) {
+    const normalizedRegistrationNumber = registrationNumber.trim().toUpperCase();
+    const regRegex = /^[A-Z]{2}\d{2}[A-Z]{1,2}\d{4}$/;
+    if (!regRegex.test(normalizedRegistrationNumber)) {
+      const error = new Error(
+        "Registration number must follow the format (e.g. GJ01AB7432) and end with exactly 4 digits."
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (normalizedRegistrationNumber !== vehicle.registrationNumber) {
+      const existingVehicle = await vehicleRepository.findVehicleByRegistrationNumber(
+        normalizedRegistrationNumber
+      );
+      if (existingVehicle) {
+        const error = new Error("A vehicle with this registration number already exists.");
+        error.statusCode = 409;
+        throw error;
+      }
+    }
+    payload.registrationNumber = normalizedRegistrationNumber;
+  }
+
+  if (status !== undefined) {
+    const validStatuses = ["AVAILABLE", "ON_TRIP", "IN_SHOP", "RETIRED"];
+    const normalizedStatus = status.trim().toUpperCase();
+    if (!validStatuses.includes(normalizedStatus)) {
+      const error = new Error("Invalid vehicle status.");
+      error.statusCode = 400;
+      throw error;
+    }
+    payload.status = normalizedStatus;
+  }
+
+  return vehicleRepository.updateVehicle(id, payload);
 }

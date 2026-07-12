@@ -2,15 +2,15 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "../../../../api-client";
-import { 
-  Truck, 
-  Plus, 
-  Search, 
-  Filter, 
-  DollarSign, 
-  Gauge, 
-  Scale, 
-  X, 
+import {
+  Truck,
+  Plus,
+  Search,
+  Filter,
+  DollarSign,
+  Gauge,
+  Scale,
+  X,
   AlertCircle,
   Loader2,
   ChevronLeft,
@@ -19,7 +19,9 @@ import {
   ShieldCheck,
   CheckCircle,
   Wrench,
-  Ban
+  Ban,
+  Edit,
+  Trash2,
 } from "lucide-react";
 
 interface Vehicle {
@@ -50,7 +52,7 @@ export default function VehicleRegistryPage() {
     total: 0,
     page: 1,
     limit: 10,
-    totalPages: 1
+    totalPages: 1,
   });
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
@@ -67,7 +69,7 @@ export default function VehicleRegistryPage() {
     total: 0,
     available: 0,
     inShop: 0,
-    onTrip: 0
+    onTrip: 0,
   });
 
   // Modal form state
@@ -81,6 +83,9 @@ export default function VehicleRegistryPage() {
   const [maxLoad, setMaxLoad] = useState<string>("");
   const [odometer, setOdometer] = useState<string>("");
   const [cost, setCost] = useState<string>("");
+  const [status, setStatus] = useState<string>("AVAILABLE");
+  const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Fetch vehicles with current filters & pagination
   const fetchVehicles = useCallback(async () => {
@@ -110,7 +115,10 @@ export default function VehicleRegistryPage() {
         setError("Failed to retrieve vehicles.");
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred while fetching vehicles.";
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred while fetching vehicles.";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -125,9 +133,9 @@ export default function VehicleRegistryPage() {
         const list: Vehicle[] = res.data;
         setStats({
           total: list.length,
-          available: list.filter(v => v.status === "AVAILABLE").length,
-          inShop: list.filter(v => v.status === "IN_SHOP").length,
-          onTrip: list.filter(v => v.status === "ON_TRIP").length
+          available: list.filter((v) => v.status === "AVAILABLE").length,
+          inShop: list.filter((v) => v.status === "IN_SHOP").length,
+          onTrip: list.filter((v) => v.status === "ON_TRIP").length,
         });
       }
     } catch {
@@ -162,12 +170,28 @@ export default function VehicleRegistryPage() {
     setMaxLoad("");
     setOdometer("");
     setCost("");
+    setStatus("AVAILABLE");
+    setEditingVehicleId(null);
     setModalError("");
   };
 
-  // Open modal
+  // Open modal for Create
   const handleOpenModal = () => {
     resetForm();
+    setIsModalOpen(true);
+  };
+
+  // Open modal for Edit
+  const handleOpenEditModal = (vehicle: Vehicle) => {
+    setModalError("");
+    setEditingVehicleId(vehicle.id);
+    setRegNumber(vehicle.registrationNumber);
+    setName(vehicle.name);
+    setVehicleType(vehicle.type);
+    setMaxLoad(vehicle.maxLoadCapacity.toString());
+    setOdometer(vehicle.odometer.toString());
+    setCost(vehicle.acquisitionCost.toString());
+    setStatus(vehicle.status);
     setIsModalOpen(true);
   };
 
@@ -184,7 +208,14 @@ export default function VehicleRegistryPage() {
     setModalError("");
 
     // Front-end Validations
-    if (!regNumber.trim() || !name.trim() || !vehicleType.trim() || !maxLoad || !odometer || !cost) {
+    if (
+      !regNumber.trim() ||
+      !name.trim() ||
+      !vehicleType.trim() ||
+      !maxLoad ||
+      !odometer ||
+      !cost
+    ) {
       setModalError("All fields are required.");
       return;
     }
@@ -193,24 +224,36 @@ export default function VehicleRegistryPage() {
     const numericOdometer = parseFloat(odometer);
     const numericCost = parseFloat(cost);
 
-    if (isNaN(numericMaxLoad) || numericMaxLoad <= 0) {
-      setModalError("Maximum load capacity must be a number greater than 0.");
+    if (
+      isNaN(numericMaxLoad) ||
+      numericMaxLoad <= 0 ||
+      numericMaxLoad > 30000
+    ) {
+      setModalError(
+        "Maximum load capacity must be a positive number up to 30,000 kg.",
+      );
       return;
     }
 
-    if (isNaN(numericOdometer) || numericOdometer < 0) {
-      setModalError("Odometer must be a number greater than or equal to 0.");
+    if (
+      isNaN(numericOdometer) ||
+      numericOdometer < 0 ||
+      numericOdometer > 1500000
+    ) {
+      setModalError("Odometer must be a number between 0 and 1,500,000 km.");
       return;
     }
 
-    if (isNaN(numericCost) || numericCost < 0) {
-      setModalError("Acquisition cost must be a number greater than or equal to 0.");
+    if (isNaN(numericCost) || numericCost < 0 || numericCost > 100000000) {
+      setModalError(
+        "Acquisition cost must be a number between 0 and ₹10,00,00,005.",
+      );
       return;
     }
 
     setSubmitting(true);
     try {
-      const payload = {
+      const payload: any = {
         registrationNumber: regNumber.trim().toUpperCase(),
         name: name.trim(),
         type: vehicleType.trim(),
@@ -219,8 +262,17 @@ export default function VehicleRegistryPage() {
         acquisitionCost: numericCost,
       };
 
-      const res = await apiFetch("/api/vehicles", {
-        method: "POST",
+      if (editingVehicleId) {
+        payload.status = status;
+      }
+
+      const endpoint = editingVehicleId
+        ? `/api/vehicles/${editingVehicleId}`
+        : "/api/vehicles";
+      const method = editingVehicleId ? "PUT" : "POST";
+
+      const res = await apiFetch(endpoint, {
+        method,
         body: JSON.stringify(payload),
       });
 
@@ -229,13 +281,43 @@ export default function VehicleRegistryPage() {
         resetForm();
         fetchVehicles();
       } else {
-        setModalError(res.message || "Failed to register vehicle.");
+        setModalError(
+          res.message ||
+            `Failed to ${editingVehicleId ? "update" : "register"} vehicle.`,
+        );
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Something went wrong.";
+      const errorMessage =
+        err instanceof Error ? err.message : "Something went wrong.";
       setModalError(errorMessage);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Handle delete vehicle
+  const handleDeleteVehicle = async (id: string) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to permanently delete this vehicle? All linked maintenance logs will be deleted.",
+      )
+    ) {
+      return;
+    }
+    setDeletingId(id);
+    try {
+      const res = await apiFetch(`/api/vehicles/${id}`, {
+        method: "DELETE",
+      });
+      if (res.success) {
+        fetchVehicles();
+      } else {
+        alert(res.message || "Failed to delete vehicle.");
+      }
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to delete vehicle.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -245,27 +327,27 @@ export default function VehicleRegistryPage() {
       case "AVAILABLE":
         return {
           bg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 border-emerald-500/20",
-          icon: CheckCircle
+          icon: CheckCircle,
         };
       case "ON_TRIP":
         return {
           bg: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
-          icon: ShieldCheck
+          icon: ShieldCheck,
         };
       case "IN_SHOP":
         return {
           bg: "bg-amber-500/10 text-amber-600 dark:text-amber-450 border-amber-500/20",
-          icon: Wrench
+          icon: Wrench,
         };
       case "RETIRED":
         return {
           bg: "bg-rose-500/10 text-rose-600 dark:text-rose-450 border-rose-500/20",
-          icon: Ban
+          icon: Ban,
         };
       default:
         return {
           bg: "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/20",
-          icon: AlertCircle
+          icon: AlertCircle,
         };
     }
   };
@@ -285,12 +367,15 @@ export default function VehicleRegistryPage() {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
-      
       {/* Header Block */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">Vehicle Registry</h1>
-          <p className="text-zinc-555 dark:text-zinc-400 mt-2">Manage and monitor the transit fleet master database.</p>
+          <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
+            Vehicle Registry
+          </h1>
+          <p className="text-zinc-555 dark:text-zinc-400 mt-2">
+            Manage and monitor the transit fleet master database.
+          </p>
         </div>
         <button
           onClick={handleOpenModal}
@@ -299,30 +384,63 @@ export default function VehicleRegistryPage() {
           <Plus className="h-4 w-4" /> Add Vehicle
         </button>
       </div>
-
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {[
-          { label: "Total Registered", value: stats.total, desc: "Total fleet inventory", color: "text-blue-500 bg-blue-500/10 border-blue-500/20", icon: Truck },
-          { label: "Available now", value: stats.available, desc: "Ready for trip dispatch", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", icon: CheckCircle },
-          { label: "In Maintenance", value: stats.inShop, desc: "Currently in repair shop", color: "text-amber-500 bg-amber-500/10 border-amber-500/20", icon: Wrench },
-          { label: "Active on Trip", value: stats.onTrip, desc: "On active dispatch route", color: "text-sky-500 bg-sky-500/10 border-sky-500/20", icon: ShieldCheck }
+          {
+            label: "Total Registered",
+            value: stats.total,
+            desc: "Total fleet inventory",
+            color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
+            icon: Truck,
+          },
+          {
+            label: "Available now",
+            value: stats.available,
+            desc: "Ready for trip dispatch",
+            color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+            icon: CheckCircle,
+          },
+          {
+            label: "In Maintenance",
+            value: stats.inShop,
+            desc: "Currently in repair shop",
+            color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
+            icon: Wrench,
+          },
+          {
+            label: "Active on Trip",
+            value: stats.onTrip,
+            desc: "On active dispatch route",
+            color: "text-sky-500 bg-sky-500/10 border-sky-500/20",
+            icon: ShieldCheck,
+          },
         ].map((stat, idx) => (
-          <div key={idx} className="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-6 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.01]">
+          <div
+            key={idx}
+            className="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-6 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.01]"
+          >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-widest">{stat.label}</span>
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${stat.color} transition-all duration-300 group-hover:scale-110`}>
+              <span className="text-xs font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-widest">
+                {stat.label}
+              </span>
+              <div
+                className={`flex h-10 w-10 items-center justify-center rounded-xl border ${stat.color} transition-all duration-300 group-hover:scale-110`}
+              >
                 <stat.icon className="h-5 w-5" />
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-3xl font-black text-zinc-900 dark:text-white">{stat.value}</span>
-              <span className="block text-xs text-zinc-500 dark:text-zinc-500 mt-1">{stat.desc}</span>
+              <span className="text-3xl font-black text-zinc-900 dark:text-white">
+                {stat.value}
+              </span>
+              <span className="block text-xs text-zinc-500 dark:text-zinc-500 mt-1">
+                {stat.desc}
+              </span>
             </div>
           </div>
         ))}
       </div>
-
       {/* Control / Filter Bar */}
       <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-5 backdrop-blur-sm shadow-sm transition-colors duration-200">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -351,7 +469,9 @@ export default function VehicleRegistryPage() {
             >
               <option value="All">All Vehicle Types</option>
               {VEHICLE_TYPES.map((type) => (
-                <option key={type} value={type}>{type}</option>
+                <option key={type} value={type}>
+                  {type}
+                </option>
               ))}
             </select>
           </div>
@@ -366,27 +486,34 @@ export default function VehicleRegistryPage() {
             >
               <option value="All">All Statuses</option>
               {VEHICLE_STATUSES.map((status) => (
-                <option key={status} value={status}>{status.replace("_", " ")}</option>
+                <option key={status} value={status}>
+                  {status.replace("_", " ")}
+                </option>
               ))}
             </select>
           </div>
         </div>
       </div>
-
       {/* Main Table / Grid Container */}
       <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 overflow-hidden backdrop-blur-sm shadow-sm transition-colors duration-200">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
-            <p className="text-zinc-500 dark:text-zinc-400 text-sm font-bold">Synchronizing registry records...</p>
+            <p className="text-zinc-500 dark:text-zinc-400 text-sm font-bold">
+              Synchronizing registry records...
+            </p>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20 mb-4">
               <AlertCircle className="h-6 w-6" />
             </div>
-            <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Registry Out of Sync</h3>
-            <p className="text-sm text-zinc-550 dark:text-zinc-400 mt-2">{error}</p>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
+              Registry Out of Sync
+            </h3>
+            <p className="text-sm text-zinc-550 dark:text-zinc-400 mt-2">
+              {error}
+            </p>
             <button
               onClick={fetchVehicles}
               className="mt-6 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 px-5 py-2.5 text-sm font-semibold transition-colors cursor-pointer"
@@ -399,9 +526,12 @@ export default function VehicleRegistryPage() {
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-500 border border-blue-500/20 mb-4">
               <Truck className="h-7 w-7" />
             </div>
-            <h3 className="text-lg font-bold text-zinc-900 dark:text-white font-sans">No Fleet Assets Found</h3>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white font-sans">
+              No Fleet Assets Found
+            </h3>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2 font-medium">
-              No matching records exist in the fleet database. Refine active filters or insert a new vehicle entry.
+              No matching records exist in the fleet database. Refine active
+              filters or insert a new vehicle entry.
             </p>
             {(search || typeFilter !== "All" || statusFilter !== "All") && (
               <button
@@ -424,12 +554,17 @@ export default function VehicleRegistryPage() {
                 const statusConfig = getStatusDetails(vehicle.status);
                 const StatusIcon = statusConfig.icon;
                 return (
-                  <div key={vehicle.id} className="p-5 space-y-3 bg-white dark:bg-zinc-900/10 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/5 transition-colors">
+                  <div
+                    key={vehicle.id}
+                    className="p-5 space-y-3 bg-white dark:bg-zinc-900/10 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/5 transition-colors"
+                  >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-zinc-900 dark:text-white tracking-wider font-mono text-base">
                         {vehicle.registrationNumber}
                       </span>
-                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusConfig.bg}`}>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusConfig.bg}`}
+                      >
                         <StatusIcon className="h-3 w-3" />
                         {vehicle.status.replace("_", " ")}
                       </span>
@@ -446,17 +581,45 @@ export default function VehicleRegistryPage() {
 
                     <div className="grid grid-cols-3 gap-2 pt-2 text-xs border-t border-zinc-100 dark:border-zinc-800/50">
                       <div>
-                        <span className="block text-[10px] uppercase font-bold text-zinc-400">Capacity</span>
-                        <span className="font-semibold text-zinc-800 dark:text-zinc-300">{formatNumber(vehicle.maxLoadCapacity)} kg</span>
+                        <span className="block text-[10px] uppercase font-bold text-zinc-400">
+                          Capacity
+                        </span>
+                        <span className="font-semibold text-zinc-800 dark:text-zinc-300">
+                          {formatNumber(vehicle.maxLoadCapacity)} kg
+                        </span>
                       </div>
                       <div>
-                        <span className="block text-[10px] uppercase font-bold text-zinc-400">Odometer</span>
-                        <span className="font-semibold text-zinc-800 dark:text-zinc-300">{formatNumber(vehicle.odometer)} km</span>
+                        <span className="block text-[10px] uppercase font-bold text-zinc-400">
+                          Odometer
+                        </span>
+                        <span className="font-semibold text-zinc-800 dark:text-zinc-300">
+                          {formatNumber(vehicle.odometer)} km
+                        </span>
                       </div>
                       <div>
-                        <span className="block text-[10px] uppercase font-bold text-zinc-450">Cost</span>
-                        <span className="font-bold text-zinc-900 dark:text-white">{formatCurrency(vehicle.acquisitionCost)}</span>
+                        <span className="block text-[10px] uppercase font-bold text-zinc-450">
+                          Cost
+                        </span>
+                        <span className="font-bold text-zinc-900 dark:text-white">
+                          {formatCurrency(vehicle.acquisitionCost)}
+                        </span>
                       </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/50">
+                      <button
+                        onClick={() => handleOpenEditModal(vehicle)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-55/20 dark:hover:bg-blue-900/20 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <Edit className="h-3.5 w-3.5" /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteVehicle(vehicle.id)}
+                        disabled={deletingId === vehicle.id}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-55/20 dark:hover:bg-rose-900/20 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Delete
+                      </button>
                     </div>
                   </div>
                 );
@@ -475,6 +638,7 @@ export default function VehicleRegistryPage() {
                     <th className="py-4.5 px-6">Odometer</th>
                     <th className="py-4.5 px-6">Acquisition Cost</th>
                     <th className="py-4.5 px-6">Status</th>
+                    <th className="py-4.5 px-6 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200/60 dark:divide-zinc-800/40">
@@ -482,7 +646,10 @@ export default function VehicleRegistryPage() {
                     const statusConfig = getStatusDetails(vehicle.status);
                     const StatusIcon = statusConfig.icon;
                     return (
-                      <tr key={vehicle.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/10 transition-colors duration-150">
+                      <tr
+                        key={vehicle.id}
+                        className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/10 transition-colors duration-150"
+                      >
                         <td className="py-4 px-6 font-bold text-zinc-900 dark:text-white tracking-wider font-mono">
                           {vehicle.registrationNumber}
                         </td>
@@ -502,10 +669,31 @@ export default function VehicleRegistryPage() {
                           {formatCurrency(vehicle.acquisitionCost)}
                         </td>
                         <td className="py-4 px-6">
-                          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${statusConfig.bg}`}>
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${statusConfig.bg}`}
+                          >
                             <StatusIcon className="h-3.5 w-3.5" />
                             {vehicle.status.replace("_", " ")}
                           </span>
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleOpenEditModal(vehicle)}
+                              className="inline-flex items-center justify-center p-2 rounded-xl text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-transparent hover:border-blue-200 dark:hover:border-blue-900/40 transition-all cursor-pointer"
+                              title="Edit Vehicle"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteVehicle(vehicle.id)}
+                              disabled={deletingId === vehicle.id}
+                              className="inline-flex items-center justify-center p-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-transparent hover:border-rose-200 dark:hover:border-rose-900/40 transition-all cursor-pointer disabled:opacity-50"
+                              title="Delete Vehicle"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -517,7 +705,9 @@ export default function VehicleRegistryPage() {
             {/* Premium Pagination Bar */}
             <div className="flex flex-col sm:flex-row items-center justify-between border-t border-zinc-200 dark:border-zinc-800/65 bg-zinc-50/40 dark:bg-zinc-950/10 px-6 py-4.5 gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-zinc-450 dark:text-zinc-500 uppercase">Page Size</span>
+                <span className="text-xs font-bold text-zinc-450 dark:text-zinc-500 uppercase">
+                  Page Size
+                </span>
                 <select
                   value={pageSize}
                   onChange={(e) => {
@@ -527,24 +717,43 @@ export default function VehicleRegistryPage() {
                   className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-2 py-1 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                 >
                   {[5, 10, 20, 50].map((size) => (
-                    <option key={size} value={size}>{size} per page</option>
+                    <option key={size} value={size}>
+                      {size} per page
+                    </option>
                   ))}
                 </select>
                 <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium ml-2">
-                  Showing <span className="font-bold text-zinc-850 dark:text-zinc-200">{(currentPage - 1) * pageSize + 1}</span> to <span className="font-bold text-zinc-850 dark:text-zinc-200">{Math.min(currentPage * pageSize, pagination.total)}</span> of <span className="font-bold text-zinc-850 dark:text-zinc-200">{pagination.total}</span> assets
+                  Showing{" "}
+                  <span className="font-bold text-zinc-850 dark:text-zinc-200">
+                    {(currentPage - 1) * pageSize + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-bold text-zinc-850 dark:text-zinc-200">
+                    {Math.min(currentPage * pageSize, pagination.total)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-bold text-zinc-850 dark:text-zinc-200">
+                    {pagination.total}
+                  </span>{" "}
+                  assets
                 </span>
               </div>
 
               {pagination.totalPages > 1 && (
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
                     disabled={currentPage === 1}
                     className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
-                  {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((p) => (
+                  {Array.from(
+                    { length: pagination.totalPages },
+                    (_, i) => i + 1,
+                  ).map((p) => (
                     <button
                       key={p}
                       onClick={() => setCurrentPage(p)}
@@ -558,7 +767,11 @@ export default function VehicleRegistryPage() {
                     </button>
                   ))}
                   <button
-                    onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(pagination.totalPages, prev + 1),
+                      )
+                    }
                     disabled={currentPage === pagination.totalPages}
                     className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
                   >
@@ -569,13 +782,15 @@ export default function VehicleRegistryPage() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Add Vehicle Modal Dialog */}
+      </div>{" "}
+      {/* Add / Edit Vehicle Modal Dialog */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-md transition-all duration-300">
           {/* Backdrop Click */}
-          <div className="absolute inset-0 cursor-default" onClick={handleCloseModal} />
+          <div
+            className="absolute inset-0 cursor-default"
+            onClick={handleCloseModal}
+          />
 
           {/* Modal Content */}
           <div className="relative w-full max-w-xl rounded-3xl border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-900 p-6 sm:p-8 shadow-2xl z-10 transition-all duration-200 transform scale-100">
@@ -586,8 +801,16 @@ export default function VehicleRegistryPage() {
                   <Plus className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Register New Fleet Asset</h3>
-                  <p className="text-xs text-zinc-550 dark:text-zinc-400 mt-0.5 font-medium">Starts with AVAILABLE operational status.</p>
+                  <h3 className="text-xl font-bold text-zinc-900 dark:text-white">
+                    {editingVehicleId
+                      ? "Edit Fleet Asset Details"
+                      : "Register New Fleet Asset"}
+                  </h3>
+                  <p className="text-xs text-zinc-550 dark:text-zinc-400 mt-0.5 font-medium">
+                    {editingVehicleId
+                      ? "Modify operational and identification details below."
+                      : "Starts with AVAILABLE operational status."}
+                  </p>
                 </div>
               </div>
               <button
@@ -613,7 +836,10 @@ export default function VehicleRegistryPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Registration Number */}
                 <div className="space-y-1.5">
-                  <label htmlFor="reg-number" className="text-xs font-bold text-zinc-450 dark:text-zinc-400 uppercase tracking-wider">
+                  <label
+                    htmlFor="reg-number"
+                    className="text-xs font-bold text-zinc-450 dark:text-zinc-400 uppercase tracking-wider"
+                  >
                     Registration Number
                   </label>
                   <input
@@ -630,7 +856,10 @@ export default function VehicleRegistryPage() {
 
                 {/* Name / Model */}
                 <div className="space-y-1.5">
-                  <label htmlFor="vehicle-name" className="text-xs font-bold text-zinc-450 dark:text-zinc-400 uppercase tracking-wider">
+                  <label
+                    htmlFor="vehicle-name"
+                    className="text-xs font-bold text-zinc-450 dark:text-zinc-400 uppercase tracking-wider"
+                  >
                     Vehicle Model / Name
                   </label>
                   <input
@@ -647,7 +876,10 @@ export default function VehicleRegistryPage() {
 
                 {/* Vehicle Type */}
                 <div className="space-y-1.5">
-                  <label htmlFor="vehicle-type-select" className="text-xs font-bold text-zinc-450 dark:text-zinc-400 uppercase tracking-wider">
+                  <label
+                    htmlFor="vehicle-type-select"
+                    className="text-xs font-bold text-zinc-450 dark:text-zinc-400 uppercase tracking-wider"
+                  >
                     Vehicle Class / Type
                   </label>
                   <select
@@ -658,14 +890,19 @@ export default function VehicleRegistryPage() {
                     className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-3 text-zinc-900 dark:text-white shadow-inner focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm transition-colors cursor-pointer font-medium"
                   >
                     {VEHICLE_TYPES.map((type) => (
-                      <option key={type} value={type}>{type}</option>
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
                     ))}
                   </select>
                 </div>
 
                 {/* Max Load Capacity */}
                 <div className="space-y-1.5">
-                  <label htmlFor="max-load" className="text-xs font-bold text-zinc-450 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <label
+                    htmlFor="max-load"
+                    className="text-xs font-bold text-zinc-450 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5"
+                  >
                     <Scale className="h-3.5 w-3.5" /> Payload capacity (kg)
                   </label>
                   <input
@@ -684,8 +921,11 @@ export default function VehicleRegistryPage() {
 
                 {/* Odometer */}
                 <div className="space-y-1.5">
-                  <label htmlFor="odometer" className="text-xs font-bold text-zinc-450 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Gauge className="h-3.5 w-3.5" /> Initial Odometer (km)
+                  <label
+                    htmlFor="odometer"
+                    className="text-xs font-bold text-zinc-450 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5"
+                  >
+                    <Gauge className="h-3.5 w-3.5" /> Odometer (km)
                   </label>
                   <input
                     id="odometer"
@@ -703,7 +943,10 @@ export default function VehicleRegistryPage() {
 
                 {/* Acquisition Cost */}
                 <div className="space-y-1.5">
-                  <label htmlFor="acq-cost" className="text-xs font-bold text-zinc-450 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <label
+                    htmlFor="acq-cost"
+                    className="text-xs font-bold text-zinc-450 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5"
+                  >
                     <DollarSign className="h-3.5 w-3.5" /> Cost Price (₹)
                   </label>
                   <input
@@ -719,6 +962,31 @@ export default function VehicleRegistryPage() {
                     className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-550 shadow-inner focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm transition-colors font-mono font-medium"
                   />
                 </div>
+
+                {/* Operational Status (Only visible when editing) */}
+                {editingVehicleId && (
+                  <div className="space-y-1.5 col-span-1 sm:col-span-2">
+                    <label
+                      htmlFor="vehicle-status"
+                      className="text-xs font-bold text-zinc-450 dark:text-zinc-400 uppercase tracking-wider"
+                    >
+                      Operational Status
+                    </label>
+                    <select
+                      id="vehicle-status"
+                      disabled={submitting}
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                      className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-3 text-zinc-900 dark:text-white shadow-inner focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm transition-colors cursor-pointer font-medium"
+                    >
+                      {VEHICLE_STATUSES.map((st) => (
+                        <option key={st} value={st}>
+                          {st.replace("_", " ")}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
               {/* Modal Actions */}
@@ -738,8 +1006,11 @@ export default function VehicleRegistryPage() {
                 >
                   {submitting ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> Registering...
+                      <Loader2 className="h-4 w-4 animate-spin" />{" "}
+                      {editingVehicleId ? "Updating..." : "Registering..."}
                     </>
+                  ) : editingVehicleId ? (
+                    "Update Asset"
                   ) : (
                     "Register Asset"
                   )}

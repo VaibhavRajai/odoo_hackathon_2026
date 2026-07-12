@@ -100,4 +100,42 @@ export async function getCostTotalsForVehicles(vehicleIds) {
       return [id, { totalFuelCost, totalMaintenanceCost, totalOperationalCost: totalFuelCost + totalMaintenanceCost }];
     })
   );
-}
+}
+
+/**
+ * Find a vehicle by its unique ID.
+ *
+ * @param {string} id - Vehicle ID.
+ * @returns {Promise<Object|null>} Matching vehicle or null.
+ */
+export async function findVehicleById(id) {
+  return prisma.vehicle.findUnique({
+    where: { id },
+  });
+}
+
+/**
+ * Delete a vehicle by its ID.
+ *
+ * @param {string} id - Vehicle ID.
+ * @returns {Promise<Object>} Deleted vehicle.
+ */
+export async function deleteVehicle(id) {
+  return prisma.vehicle.delete({
+    where: { id },
+  });
+}
+
+/**
+ * Update a vehicle's data by its ID.
+ *
+ * @param {string} id - Vehicle ID.
+ * @param {Object} data - Fields to update.
+ * @returns {Promise<Object>} Updated vehicle object.
+ */
+export async function updateVehicle(id, data) {
+  return prisma.vehicle.update({
+    where: { id },
+    data,
+  });
+}
