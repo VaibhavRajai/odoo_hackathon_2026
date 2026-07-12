@@ -1,5 +1,8 @@
-node_modules
+node_modules/
+.next/
+out/
+build/
 npm-debug.log
-.next
-.git
 .env
+.git
+.gitignore

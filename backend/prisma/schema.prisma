@@ -1,0 +1,36 @@
+// TransitOps — Prisma Schema
+// Roles: Fleet Manager | Driver | Safety Officer | Financial Analyst
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Role ────────────────────────────────────────────────────────────────────
+// Pre-seeded. One of: Fleet Manager, Driver, Safety Officer, Financial Analyst.
+model Role {
+  id    String @id @default(cuid())
+  name  String @unique
+  users User[]
+
+  @@map("roles")
+}
+
+// ─── User ────────────────────────────────────────────────────────────────────
+// Users are pre-seeded — no self-registration.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  roleId       String
+  role         Role     @relation(fields: [roleId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([email])
+  @@map("users")
+}
