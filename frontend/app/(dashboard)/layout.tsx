@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { apiFetch } from "../api-client";
-import { LogOut, User as UserIcon, Shield, Layers, Calendar, BarChart2 } from "lucide-react";
+import { useTheme } from "../theme-provider";
+import { LogOut, User as UserIcon, Shield, Layers, Calendar, BarChart2, Sun, Moon } from "lucide-react";
 
 interface UserSession {
   userId: string;
@@ -20,6 +21,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { theme, toggleTheme } = useTheme();
   const [user, setUser] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -56,10 +58,10 @@ export default function DashboardLayout({
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950 text-white">
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white transition-colors duration-200">
         <div className="flex flex-col items-center gap-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
-          <p className="text-zinc-400 font-medium font-sans">Loading session...</p>
+          <p className="text-zinc-500 dark:text-zinc-400 font-medium font-sans">Loading session...</p>
         </div>
       </div>
     );
@@ -68,59 +70,74 @@ export default function DashboardLayout({
   if (!user) return null;
 
   return (
-    <div className="flex min-h-screen bg-zinc-950 text-zinc-100 font-sans">
+    <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-200">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-zinc-800 bg-zinc-900/40 p-6 flex flex-col justify-between hidden md:flex backdrop-blur-xl">
+      <aside className="w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-6 flex flex-col justify-between hidden md:flex backdrop-blur-xl transition-colors duration-200">
         <div className="space-y-8">
           {/* Logo / Branding */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.2)]">
-              <Shield className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight text-white leading-none">TransitOps</h1>
-              <span className="text-[10px] text-zinc-500 font-semibold tracking-wider uppercase">Telemetry Hub</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.2)]">
+                <Shield className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white leading-none">TransitOps</h1>
+                <span className="text-[10px] text-zinc-500 font-semibold tracking-wider uppercase">Telemetry Hub</span>
+              </div>
             </div>
           </div>
 
           {/* Navigation Links */}
           <nav className="space-y-1.5">
-            <div className="px-3 mb-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Navigation</div>
+            <div className="px-3 mb-2 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Navigation</div>
             <a
               href="#"
-              className="flex items-center gap-3 rounded-lg bg-zinc-800/50 px-3.5 py-2.5 text-sm font-medium text-white transition-colors"
+              className="flex items-center gap-3 rounded-lg bg-zinc-100 dark:bg-zinc-800/50 px-3.5 py-2.5 text-sm font-medium text-zinc-900 dark:text-white transition-colors"
             >
               <Layers className="h-4 w-4 text-blue-500" /> Dashboard Overview
             </a>
             <a
               href="#"
-              className="flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-zinc-400 hover:bg-zinc-800/30 hover:text-white transition-colors"
+              className="flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/30 hover:text-zinc-900 dark:hover:text-white transition-colors"
             >
               <BarChart2 className="h-4 w-4" /> Telemetry Reports
             </a>
             <a
               href="#"
-              className="flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-zinc-400 hover:bg-zinc-800/30 hover:text-white transition-colors"
+              className="flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/30 hover:text-zinc-900 dark:hover:text-white transition-colors"
             >
               <Calendar className="h-4 w-4" /> Operations Log
             </a>
           </nav>
         </div>
 
-        {/* User Card & Logout */}
-        <div className="space-y-4 pt-6 border-t border-zinc-800/60">
+        {/* User Card, Theme toggle & Logout */}
+        <div className="space-y-4 pt-6 border-t border-zinc-200 dark:border-zinc-800/60">
+          {/* Theme switcher inline row */}
+          <div className="flex items-center justify-between px-1 mb-2">
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Theme</span>
+            <button
+              onClick={toggleTheme}
+              type="button"
+              className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-all cursor-pointer"
+            >
+              {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+            </button>
+          </div>
+
           <div className="flex items-center gap-3 px-1">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300">
               <UserIcon className="h-4 w-4" />
             </div>
             <div className="overflow-hidden">
-              <div className="truncate text-sm font-semibold text-white leading-none">{user.name}</div>
-              <span className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider">{user.role}</span>
+              <div className="truncate text-sm font-semibold text-zinc-900 dark:text-white leading-none">{user.name}</div>
+              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold uppercase tracking-wider">{user.role}</span>
             </div>
           </div>
+
           <button
             onClick={handleLogout}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-800 hover:bg-red-950/20 hover:text-red-400 border border-zinc-700/60 hover:border-red-900/30 px-4 py-2.5 text-sm font-semibold text-zinc-300 transition-all cursor-pointer"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 dark:hover:text-red-400 border border-zinc-200 dark:border-zinc-700/60 hover:border-red-200 dark:hover:border-red-900/30 px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition-all cursor-pointer"
           >
             <LogOut className="h-4 w-4" /> Sign Out
           </button>
@@ -130,19 +147,29 @@ export default function DashboardLayout({
       {/* Main Container */}
       <div className="flex flex-1 flex-col">
         {/* Mobile Header */}
-        <header className="flex h-16 items-center justify-between border-b border-zinc-800 bg-zinc-900/40 px-6 md:hidden">
+        <header className="flex h-16 items-center justify-between border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 px-6 md:hidden transition-colors duration-200">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded bg-blue-600 text-white">
               <Shield className="h-4 w-4" />
             </div>
-            <span className="text-sm font-bold text-white">TransitOps</span>
+            <span className="text-sm font-bold text-zinc-900 dark:text-white">TransitOps</span>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex h-8 w-8 items-center justify-center rounded bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-red-950/20 hover:text-red-400 cursor-pointer"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+          
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleTheme}
+              type="button"
+              className="p-2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 cursor-pointer"
+            >
+              {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex h-8 w-8 items-center justify-center rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 dark:hover:text-red-400 cursor-pointer"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </header>
 
         {/* Dynamic Page Content */}

@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiFetch } from "../../api-client";
-import { ShieldCheck, ShieldAlert, KeyRound, Mail, ArrowLeft, Send, CheckCircle2, RefreshCw } from "lucide-react";
+import { useTheme } from "../../theme-provider";
+import { ShieldCheck, ShieldAlert, KeyRound, Mail, ArrowLeft, Send, CheckCircle2, RefreshCw, Sun, Moon } from "lucide-react";
 
 interface Account {
   id: string;
@@ -17,6 +18,7 @@ type FlowStep = "SELECT_ACCOUNT" | "VERIFY_OTP" | "RESET_PASSWORD" | "SUCCESS";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
 
   // Accounts list
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -154,18 +156,32 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-radial from-zinc-900 to-black px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-8 backdrop-blur-xl shadow-2xl">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950 px-4 py-12 sm:px-6 lg:px-8 transition-colors duration-200 relative overflow-hidden">
+      {/* Background glow effects */}
+      <div className="absolute top-0 -left-4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl dark:bg-blue-600/5 pointer-events-none"></div>
+      <div className="absolute bottom-0 -right-4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl dark:bg-purple-600/5 pointer-events-none"></div>
+
+      {/* Floating Theme Selector */}
+      <button
+        onClick={toggleTheme}
+        type="button"
+        className="absolute top-6 right-6 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-850 transition-all cursor-pointer"
+        aria-label="Toggle Theme"
+      >
+        {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+      </button>
+
+      <div className="w-full max-w-md space-y-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-8 backdrop-blur-xl shadow-2xl transition-all duration-200">
         
         {/* Title Block */}
         <div className="text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600/10 text-blue-500 border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-500 border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]">
             <KeyRound className="h-7 w-7" />
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold tracking-tight text-white font-sans">
+          <h2 className="mt-6 text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white font-sans">
             Forgot Password
           </h2>
-          <p className="mt-2 text-sm text-zinc-400">
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
             {step === "SELECT_ACCOUNT" && "Select your TransitOps account to proceed"}
             {step === "VERIFY_OTP" && "Enter the verification code sent to your email"}
             {step === "RESET_PASSWORD" && "Choose a new secure password"}
@@ -175,14 +191,14 @@ export default function ForgotPasswordPage() {
 
         {/* Global Notifications */}
         {error && (
-          <div className="flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+          <div className="flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-400">
             <ShieldAlert className="h-5 w-5 shrink-0 text-red-500" />
             <p>{error}</p>
           </div>
         )}
 
         {successMessage && step !== "SUCCESS" && (
-          <div className="flex items-start gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-400">
+          <div className="flex items-start gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-600 dark:text-emerald-400">
             <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-500" />
             <p>{successMessage}</p>
           </div>
@@ -192,7 +208,7 @@ export default function ForgotPasswordPage() {
         {step === "SELECT_ACCOUNT" && (
           <div className="space-y-6">
             <div className="relative">
-              <label className="block text-sm font-medium text-zinc-300 mb-1">
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                 Account to Reset
               </label>
               
@@ -200,7 +216,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="button"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex w-full items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3.5 text-left text-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm cursor-pointer"
+                className="flex w-full items-center justify-between rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-3.5 text-left text-zinc-900 dark:text-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm cursor-pointer"
               >
                 <span>
                   {selectedAccount
@@ -212,13 +228,13 @@ export default function ForgotPasswordPage() {
 
               {/* Dropdown Container */}
               {dropdownOpen && (
-                <div className="absolute z-10 mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-950 p-2 shadow-xl">
+                <div className="absolute z-10 mt-2 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-2 shadow-xl transition-all">
                   <input
                     type="text"
                     placeholder="Search accounts..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
+                    className="w-full rounded-lg border border-zinc-250 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
                   />
                   <div className="max-h-60 overflow-y-auto space-y-1">
                     {filteredAccounts.length > 0 ? (
@@ -234,11 +250,11 @@ export default function ForgotPasswordPage() {
                           className={`w-full text-left rounded-lg px-3 py-2.5 text-sm transition-colors cursor-pointer ${
                             selectedAccount?.id === acc.id
                               ? "bg-blue-600 text-white font-medium"
-                              : "text-zinc-300 hover:bg-zinc-900"
+                              : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900"
                           }`}
                         >
                           <div className="font-semibold">{acc.name}</div>
-                          <div className="text-xs text-zinc-400 group-hover:text-zinc-300">
+                          <div className="text-xs text-zinc-550 dark:text-zinc-400 group-hover:text-zinc-300">
                             {acc.role} &bull; {acc.email}
                           </div>
                         </button>
@@ -273,11 +289,11 @@ export default function ForgotPasswordPage() {
         {step === "VERIFY_OTP" && selectedAccount && (
           <form onSubmit={handleVerifyOTP} className="space-y-6">
             <div>
-              <label htmlFor="otp" className="block text-sm font-medium text-zinc-300">
+              <label htmlFor="otp" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 Enter 6-digit OTP
               </label>
               <div className="relative mt-1">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-500">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-450 dark:text-zinc-500">
                   <ShieldCheck className="h-5 w-5" />
                 </div>
                 <input
@@ -287,7 +303,7 @@ export default function ForgotPasswordPage() {
                   required
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                  className="block w-full rounded-xl border border-zinc-800 bg-zinc-950 pl-10 pr-3 py-3 text-center text-xl font-bold tracking-widest text-white placeholder-zinc-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 pl-10 pr-3 py-3 text-center text-xl font-bold tracking-widest text-zinc-900 dark:text-white placeholder-zinc-350 dark:placeholder-zinc-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="000000"
                 />
               </div>
@@ -298,7 +314,7 @@ export default function ForgotPasswordPage() {
                 type="button"
                 onClick={handleResendOTP}
                 disabled={loading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-zinc-800 hover:bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300 transition-colors disabled:opacity-50 cursor-pointer"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-850 px-4 py-3 text-sm font-medium text-zinc-750 dark:text-zinc-300 transition-colors disabled:opacity-50 cursor-pointer bg-white dark:bg-transparent"
               >
                 <RefreshCw className="h-4 w-4" /> Resend OTP
               </button>
@@ -323,11 +339,11 @@ export default function ForgotPasswordPage() {
           <form onSubmit={handleResetPassword} className="space-y-6">
             <div className="space-y-4">
               <div>
-                <label htmlFor="newPassword" className="block text-sm font-medium text-zinc-300">
+                <label htmlFor="newPassword" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   New Password (min 8 chars)
                 </label>
                 <div className="relative mt-1">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-500">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-450 dark:text-zinc-500">
                     <KeyRound className="h-5 w-5" />
                   </div>
                   <input
@@ -336,18 +352,18 @@ export default function ForgotPasswordPage() {
                     required
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="block w-full rounded-xl border border-zinc-800 bg-zinc-950 pl-10 pr-3 py-3 text-white placeholder-zinc-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                    className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 pl-10 pr-3 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-650 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
                     placeholder="••••••••"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-zinc-300">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   Confirm Password
                 </label>
                 <div className="relative mt-1">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-500">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-450 dark:text-zinc-500">
                     <KeyRound className="h-5 w-5" />
                   </div>
                   <input
@@ -356,7 +372,7 @@ export default function ForgotPasswordPage() {
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="block w-full rounded-xl border border-zinc-800 bg-zinc-950 pl-10 pr-3 py-3 text-white placeholder-zinc-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                    className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 pl-10 pr-3 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-655 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
                     placeholder="••••••••"
                   />
                 </div>
@@ -380,12 +396,12 @@ export default function ForgotPasswordPage() {
         {/* STEP 4: Success Screen */}
         {step === "SUCCESS" && (
           <div className="space-y-6 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20">
               <CheckCircle2 className="h-8 w-8" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-xl font-bold text-white">Password Updated</h3>
-              <p className="text-sm text-zinc-400">
+              <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Password Updated</h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 Your password has been changed successfully. You can now log in using your new credentials.
               </p>
             </div>
@@ -403,7 +419,7 @@ export default function ForgotPasswordPage() {
           <div className="text-center">
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 text-sm font-medium text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-medium text-zinc-400 dark:text-zinc-500 hover:text-zinc-650 dark:hover:text-zinc-300 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" /> Back to Sign In
             </Link>
