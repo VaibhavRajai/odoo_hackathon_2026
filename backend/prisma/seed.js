@@ -337,6 +337,9 @@ async function seed() {
 
   console.log();
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // TRIPS — with realistic revenue on COMPLETED trips for ROI analytics
+  // ──────────────────────────────────────────────────────────────────────────
   const trips = [
     {
       id: "seed-trip-1",
@@ -346,6 +349,7 @@ async function seed() {
       driverId: driverMap["Priya Sharma"],
       cargoWeight: 450,
       plannedDistance: 32,
+      revenue: 0,
       status: "DISPATCHED",
     },
     {
@@ -356,6 +360,7 @@ async function seed() {
       driverId: driverMap["Alex Menon"],
       cargoWeight: 800,
       plannedDistance: 110,
+      revenue: 0,
       status: "DRAFT",
     },
     {
@@ -366,6 +371,7 @@ async function seed() {
       driverId: driverMap["Alex Menon"],
       cargoWeight: 600,
       plannedDistance: 150,
+      revenue: 18750,
       status: "COMPLETED",
     },
   ];
@@ -374,6 +380,77 @@ async function seed() {
     await prisma.trip.upsert({ where: { id: t.id }, update: t, create: t });
     console.log(`  ✔ Trip seeded: ${t.source} -> ${t.destination}`);
   }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // ANALYTICS SEED DATA
+  // Clean, minimal fuel logs and expenses associated with base vehicles
+  // to ensure correct mathematical calculations without duplicate database bloat.
+  // ──────────────────────────────────────────────────────────────────────────
+  console.log("\n📊 Seeding analytics fuel logs & expenses...");
+
+  // 1. Fuel log for the pre-seeded completed trip (seed-trip-3 on TRUCK-11)
+  const trip3FuelId = getDeterministicUUID("fuel:seed-trip-3");
+  await prisma.fuelLog.upsert({
+    where: { id: trip3FuelId },
+    update: { liters: 45, cost: 4125 },
+    create: {
+      id: trip3FuelId,
+      vehicleId: vehicleMap["TRUCK-11"],
+      tripId: "seed-trip-3",
+      liters: 45,
+      cost: 4125,
+      date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  // 2. A few extra standalone fuel logs to show variations in efficiency
+  const extraFuelLogs = [
+    { key: "fuel-v1", regNum: "MH01AB1234", liters: 65, cost: 5850, daysAgo: 10 },
+    { key: "fuel-v2", regNum: "MH12XY5678", liters: 80, cost: 7200, daysAgo: 8 },
+    { key: "fuel-v3", regNum: "GJ01CD4321", liters: 40, cost: 3600, daysAgo: 12 },
+  ];
+
+  for (const f of extraFuelLogs) {
+    const vId = vehicleMap[f.regNum];
+    if (!vId) continue;
+    const fId = getDeterministicUUID(f.key);
+    await prisma.fuelLog.upsert({
+      where: { id: fId },
+      update: { liters: f.liters, cost: f.cost },
+      create: {
+        id: fId,
+        vehicleId: vId,
+        liters: f.liters,
+        cost: f.cost,
+        date: new Date(Date.now() - f.daysAgo * 24 * 60 * 60 * 1000),
+      },
+    });
+  }
+
+  // 3. A few clean operational expenses (tolls/parking)
+  const extraExpenses = [
+    { key: "exp-v1", regNum: "MH01AB1234", type: "Toll", amount: 240, desc: "Highway Toll Plaza" },
+    { key: "exp-v2", regNum: "MH12XY5678", type: "Parking", amount: 150, desc: "Airport Cargo Terminal Parking" },
+  ];
+
+  for (const e of extraExpenses) {
+    const vId = vehicleMap[e.regNum];
+    if (!vId) continue;
+    const eId = getDeterministicUUID(e.key);
+    await prisma.expense.upsert({
+      where: { id: eId },
+      update: { amount: e.amount, description: e.desc },
+      create: {
+        id: eId,
+        vehicleId: vId,
+        type: e.type,
+        amount: e.amount,
+        description: e.desc,
+        date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      },
+    });
+  }
+  console.log(`  ✔ Seeded ${extraExpenses.length} vehicle expenses (tolls, parking).`);
 
   console.log("\n✅ Seeding complete.\n");
 

@@ -190,6 +190,23 @@ export default function DashboardLayout({
               </a>
             )}
 
+            {user.role === "Fleet Manager" && (
+              <a
+                href="/dashboard/fleet-manager/reports"
+                title="Reports & Analytics"
+                className={`flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors ${
+                  isCollapsed ? "justify-center px-1" : ""
+                } ${
+                  pathname === "/dashboard/fleet-manager/reports"
+                    ? "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-900 dark:text-white font-semibold"
+                    : "text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/30 hover:text-zinc-900 dark:hover:text-white"
+                }`}
+              >
+                <BarChart2 className={`h-4 w-4 shrink-0 ${pathname === "/dashboard/fleet-manager/reports" ? "text-blue-500" : ""}`} /> 
+                {!isCollapsed && <span>Reports &amp; Analytics</span>}
+              </a>
+            )}
+
             {user.role === "Safety Officer" && (
               <>
                 <a

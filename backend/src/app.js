@@ -10,6 +10,7 @@ import maintenanceRouter from "./modules/maintenance/maintenance.routes.js";
 import expenseRouter from "./modules/expense/expense.routes.js";
 import fuelLogRouter from "./modules/fuelLog/fuelLog.routes.js";
 import dashboardRouter from "./modules/dashboard/dashboard.routes.js";
+import analyticsRouter from "./modules/analytics/analytics.routes.js";
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use("/api/maintenance", maintenanceRouter);
 app.use("/api/expenses", expenseRouter);
 app.use("/api/fuel-logs", fuelLogRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/api/analytics", analyticsRouter);
 
 // ─── Health Check ────────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {

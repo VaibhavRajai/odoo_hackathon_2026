@@ -33,7 +33,7 @@ The following features are **fully implemented** and functional in the repositor
 - **Autofill Helper**: Dropdown selector on the login portal to immediately sign in as any pre-seeded role.
 - **Secure Password Reset**: Multi-step verification flow utilizing 6-digit OTP codes sent via email/SMTP (with console-logging fallbacks for local environments).
 - **Account Lockout**: 5 failed login attempts trigger a 15-minute lockout, tracked per-user in Redis.
-- **Rate Limiting**: Redis-backed rate limiters on login, forgot-password, verify-OTP, and reset-password endpoints to prevent brute-force attacks.
+- **Sliding Window Rate Limiting**: Redis-backed sliding window rate limiters (utilizing `rate-limit-redis` and sorted sets in Redis) on login, forgot-password, verify-OTP, and reset-password endpoints to prevent brute-force attacks with high accuracy across restarts.
 
 ### 🚛 Vehicle Registry
 - **Master Fleet Database**: Register, edit, and delete vehicles with inputs for registration number (unique), name/model, type, load capacity, odometer, and acquisition cost.
@@ -110,7 +110,7 @@ The system enforces strict operational logic to maintain database integrity and 
 4. **Invalid Numeric Inputs**: Load capacities must be $> 0$ (up to $30,000$ kg); odometers (up to $1,500,000$ km) and acquisition costs (up to $₹10,00,00,000$) must be $\ge 0$.
 5. **Session Safety**: Password resets immediately invalidate and delete all active Redis sessions for the target user.
 6. **Account Lockout**: 5 consecutive failed login attempts lock the user out for 15 minutes (tracked in Redis).
-7. **Rate Throttling**: Login, forgot-password, verify-OTP, and reset-password endpoints are throttled with Redis-backed rate limiters.
+7. **Sliding Window Rate Throttling**: Login, forgot-password, verify-OTP, and reset-password endpoints are protected with a Redis-backed sliding window rate limiter.
 8. **License–Weight Matching**: `LMV_TR` licenses are restricted to vehicles ≤ 7,500 kg, `MGV` to ≤ 12,000 kg, and `HMV` covers all heavier vehicles.
 9. **Auto-Suspension**: Drivers with expired licenses are automatically moved to `SUSPENDED` status, preventing dispatch assignment.
 
@@ -149,13 +149,16 @@ TransitOps is configured with a modern containerized DevOps pipeline designed fo
 ### 1. Docker Compose Orchestration
 The entire application stack is orchestrated via [docker-compose.yml](file:///c:/Users/Rishabh%2520Jain/Desktop/github/odoo_hackathon_2026/docker-compose.yml):
 - **Service Dependency Graph**: `frontend` depends on `backend`, which in turn depends on `db` and `redis`. This prevents microservice startup race conditions.
+- **Redis Cache Container**: Runs on the lightweight `redis:7-alpine` Docker image. The backend communicates with it using the hostname `redis` inside the internal Docker bridge network on port `6379` (exposed to the host as `6379` for diagnostics).
 - **Persistent Data Volume**: The PostgreSQL container mounts `postgres_data` mapping to `/var/lib/postgresql/data`, guaranteeing database transactions survive container teardowns.
 - **Entrypoint Handlers**: The backend bootstrap command generates Prisma clients on-the-fly (`npx prisma generate`), applies schema modifications without complex migration bottlenecks (`npx prisma db push --accept-data-loss`), and executes idempotent database seeding (`node prisma/seed.js`).
 
 ### 2. State & Session Management (Redis Caching)
 - **Opaque Session Tokens**: Rather than transmitting sensitive claims in stateless JWTs (which cannot be revoked on-demand), TransitOps implements stateful session-based auth.
 - **Revocability Security**: User sessions are mapped to temporary `sid` tokens in Redis. Password resets immediately invalidate all sessions by wiping matching keys in Redis, neutralizing session hijack vectors.
-- **Rate Throttling**: Express rate limiters write directly to Redis using `rate-limit-redis`, providing shared rate-limiting state across backend servers.
+- **OTP Verification Storage**: 6-digit OTP codes for password reset verifications are stored temporarily in Redis with a 5-minute security TTL (Time-To-Live).
+- **Account Lockout Tracker**: Tracks consecutive failed login attempts per-user in Redis, enforcing a 15-minute lockout period.
+- **Sliding Window Rate Throttling**: Express rate limiters implement a sliding window pattern and store state directly in Redis using `rate-limit-redis`, providing shared rate-limiting across scaled backend instances.
 
 ### 3. Database Layer & Performance Optimizations (Prisma + PostgreSQL)
 - **Driver Adapter Pattern**: Configured with Prisma v7 using `@prisma/adapter-pg` to wrap the `pg` client and pass database credentials from the docker-compose environment variables securely.
@@ -175,6 +178,51 @@ Security tokens, port configurations, and system endpoints are decoupled from co
 ### 6. Next.js Compile Optimization (Turbopack)
 - The Next.js frontend is built using Next.js 16 and Next Turbopack to deliver fast compilation, optimized asset bundling, and minimal build payloads.
 - Layouts and views split static pages (e.g. `/dashboard/fleet-manager`) from dynamic segment routes (e.g. `/dashboard/safety-officer/driver/[id]`) for fast client loading and high-fidelity rendering.
+
+### 7. DevOps & Container Maintenance Commands
+The following utility commands are used for managing and troubleshooting the multi-container environment:
+
+*   **Tear down services**:
+    ```bash
+    docker compose down
+    ```
+*   **Start services in detached mode**:
+    ```bash
+    docker compose up -d
+    ```
+*   **Rebuild and start services**:
+    ```bash
+    docker compose up --build -d
+    ```
+*   **Sync database schema changes (Prisma)**:
+    ```bash
+    docker compose exec backend npx prisma db push
+    ```
+*   **Regenerate Prisma Client inside container**:
+    ```bash
+    docker compose exec backend npx prisma generate
+    ```
+*   **Run database seed inside container**:
+    ```bash
+    docker compose exec backend npx prisma db seed
+    ```
+*   **Flush Redis Cache / Reset Rate Limit lockouts**:
+    ```bash
+    docker compose exec redis redis-cli flushall
+    ```
+*   **Run Next.js production build check in frontend container**:
+    ```bash
+    docker compose exec frontend npx next build
+    ```
+*   **Verify container statuses**:
+    ```bash
+    docker compose ps
+    ```
+*   **View live container logs**:
+    ```bash
+    docker compose logs backend --tail=30
+    docker compose logs frontend --tail=30
+    ```
 
 ---
 
