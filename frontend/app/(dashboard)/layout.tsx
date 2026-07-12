@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { apiFetch } from "../api-client";
 import { useTheme } from "../theme-provider";
-import { LogOut, User as UserIcon, Shield, Layers, Calendar, BarChart2, Sun, Moon, Menu, X } from "lucide-react";
+import { LogOut, User as UserIcon, Shield, Layers, Calendar, BarChart2, Sun, Moon, Menu, X, Truck } from "lucide-react";
 
 interface UserSession {
   userId: string;
@@ -33,7 +33,7 @@ export default function DashboardLayout({
         if (res.success && res.data) {
           setUser(res.data);
           // Redirect if accessing a dashboard of another role (basic protection)
-          if (pathname.startsWith("/dashboard/") && pathname !== res.data.dashboardPath) {
+          if (pathname.startsWith("/dashboard/") && !pathname.startsWith(res.data.dashboardPath)) {
             router.replace(res.data.dashboardPath);
           }
         } else {
@@ -103,11 +103,29 @@ export default function DashboardLayout({
         <nav className="space-y-1.5">
           <div className="px-3 mb-2 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Navigation</div>
           <a
-            href="#"
-            className="flex items-center gap-3 rounded-lg bg-zinc-100 dark:bg-zinc-800/50 px-3.5 py-2.5 text-sm font-medium text-zinc-900 dark:text-white transition-colors"
+            href={user.dashboardPath}
+            className={`flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors ${
+              pathname === user.dashboardPath
+                ? "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-900 dark:text-white font-semibold"
+                : "text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/30 hover:text-zinc-900 dark:hover:text-white"
+            }`}
           >
-            <Layers className="h-4 w-4 text-blue-500" /> Dashboard Overview
+            <Layers className={`h-4 w-4 ${pathname === user.dashboardPath ? "text-blue-500" : ""}`} /> Dashboard Overview
           </a>
+
+          {user.role === "Fleet Manager" && (
+            <a
+              href="/dashboard/fleet-manager/vehicles"
+              className={`flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors ${
+                pathname === "/dashboard/fleet-manager/vehicles"
+                  ? "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-900 dark:text-white font-semibold"
+                  : "text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/30 hover:text-zinc-900 dark:hover:text-white"
+              }`}
+            >
+              <Truck className={`h-4 w-4 ${pathname === "/dashboard/fleet-manager/vehicles" ? "text-blue-500" : ""}`} /> Vehicle Registry
+            </a>
+          )}
+
           <a
             href="#"
             className="flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/30 hover:text-zinc-900 dark:hover:text-white transition-colors"
