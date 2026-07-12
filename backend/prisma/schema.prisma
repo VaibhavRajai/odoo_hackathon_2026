@@ -69,6 +69,126 @@ model Vehicle {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
+  trips               Trip[]
+
   @@index([type])
   @@index([status])
+}
+
+/**
+ * License category endorsed on an Indian driving license.
+ *
+ * LMV_TR - Light Motor Vehicle (Transport)
+ * MGV    - Medium Goods Vehicle
+ * HMV    - Heavy Motor Vehicle
+ */
+enum LicenseCategory {
+  LMV_TR
+  MGV
+  HMV
+}
+
+/**
+ * Represents the operational status of a driver.
+ *
+ * AVAILABLE - Driver can be assigned to a trip.
+ * ON_TRIP   - Driver is currently assigned to an active trip (owned by the Dispatcher/Trip lifecycle).
+ * OFF_DUTY  - Driver is not currently working.
+ * SUSPENDED - Driver is blocked from assignment (safety incident or expired license).
+ */
+enum DriverStatus {
+  AVAILABLE
+  ON_TRIP
+  OFF_DUTY
+  SUSPENDED
+}
+
+/**
+ * Driver
+ *
+ * Maintained by the Safety Officer. Safety score is a cached average
+ * derived from SafetyRating entries submitted by the Dispatcher after
+ * each completed trip — never set directly on this record.
+ */
+model Driver {
+  id                 String          @id @default(uuid())
+  name               String
+  licenseNumber      String          @unique
+  licenseCategory    LicenseCategory
+  licenseExpiry      DateTime
+  contactNumber      String
+  email              String?
+  safetyScore        Float           @default(5)
+  safetyRatingCount  Int             @default(0)
+  status             DriverStatus    @default(AVAILABLE)
+  // Set when a license-renewal reminder email has been sent for the
+  // *current* expiry date; cleared once the license is renewed past the
+  // reminder window so a future re-expiry can trigger a fresh email.
+  renewalEmailSentAt DateTime?
+
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  safetyRatings      SafetyRating[]
+  trips              Trip[]
+
+  @@index([status])
+  @@index([licenseExpiry])
+}
+
+/**
+ * SafetyRating
+ *
+ * One row per completed trip. Submitted by the Dispatcher (1-5 scale)
+ * once the trip-completion flow exists; Driver.safetyScore is the
+ * running average of these ratings.
+ */
+model SafetyRating {
+  id        String   @id @default(uuid())
+  driverId  String
+  driver    Driver   @relation(fields: [driverId], references: [id])
+  tripId    String   @unique
+  trip      Trip     @relation(fields: [tripId], references: [id])
+  score     Int
+  createdAt DateTime @default(now())
+
+  @@index([driverId])
+}
+
+/**
+ * Trip lifecycle: Draft -> Dispatched -> Completed / Cancelled.
+ */
+enum TripStatus {
+  DRAFT
+  DISPATCHED
+  COMPLETED
+  CANCELLED
+}
+
+/**
+ * Trip
+ *
+ * Minimal scaffold — read-only for the Safety Officer module.
+ * The Dispatcher module owns creation, dispatch, and completion logic.
+ */
+model Trip {
+  id              String     @id @default(uuid())
+  source          String
+  destination     String
+  vehicleId       String
+  vehicle         Vehicle    @relation(fields: [vehicleId], references: [id])
+  driverId        String
+  driver          Driver     @relation(fields: [driverId], references: [id])
+  cargoWeight     Float
+  plannedDistance Float
+  status          TripStatus @default(DRAFT)
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  safetyRating    SafetyRating?
+
+  @@index([status])
+  @@index([driverId])
+  @@index([vehicleId])
 }
