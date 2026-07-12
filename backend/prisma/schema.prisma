@@ -143,6 +143,8 @@ model Driver {
 
   @@index([status])
   @@index([licenseExpiry])
+  @@index([createdAt])
+  @@map("drivers")
 }
 
 /**
@@ -162,6 +164,7 @@ model SafetyRating {
   createdAt DateTime @default(now())
 
   @@index([driverId])
+  @@map("safety_ratings")
 }
 
 /**
@@ -202,6 +205,8 @@ model Trip {
   @@index([status])
   @@index([driverId])
   @@index([vehicleId])
+  @@index([createdAt])
+  @@map("trips")
 }
 
 /**
