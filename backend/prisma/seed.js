@@ -17,7 +17,7 @@ const prisma = new PrismaClient({ adapter });
 
 const ROLES = [
   "Fleet Manager",
-  "Driver",
+  "Dispatcher",
   "Safety Officer",
   "Financial Analyst",
 ];
@@ -30,10 +30,10 @@ const USERS = [
     role: "Fleet Manager",
   },
   {
-    name: "Rishabh Jain (Driver)",
+    name: "Rishabh Jain (Dispatcher)",
     email: "rishabhjainwork1@gmail.com",
     password: "password123",
-    role: "Driver",
+    role: "Dispatcher",
   },
   {
     name: "Test Thampi",

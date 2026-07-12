@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiFetch } from "../../api-client";
 import { useTheme } from "../../theme-provider";
-import { LogIn, ShieldAlert, KeyRound, Mail, Sun, Moon } from "lucide-react";
+import { LogIn, ShieldAlert, KeyRound, Mail, Sun, Moon, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -54,7 +55,7 @@ export default function LoginPage() {
         {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
       </button>
 
-      <div className="w-full max-w-md space-y-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-8 backdrop-blur-xl shadow-2xl transition-all duration-200">
+      <div className="w-full max-w-md space-y-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-6 sm:p-8 backdrop-blur-xl shadow-2xl transition-all duration-200">
         <div className="text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-500 border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]">
             <KeyRound className="h-7 w-7" />
@@ -62,7 +63,7 @@ export default function LoginPage() {
           <h2 className="mt-6 text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white font-sans">
             TransitOps Portal
           </h2>
-          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-2 text-sm text-zinc-550 dark:text-zinc-400">
             Sign in to access your role-specific dashboard
           </p>
         </div>
@@ -76,8 +77,44 @@ export default function LoginPage() {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
+            {/* Predefined Roles Selector Dropdown */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              <label htmlFor="role-select" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Predefined Roles (Autofill Helper)
+              </label>
+              <select
+                id="role-select"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "manager") {
+                    setEmail("jainrishabh2610@gmail.com");
+                    setPassword("password123");
+                  } else if (val === "dispatcher") {
+                    setEmail("rishabhjainwork1@gmail.com");
+                    setPassword("password123");
+                  } else if (val === "safety") {
+                    setEmail("testthampi@gmail.com");
+                    setPassword("password123");
+                  } else if (val === "finance") {
+                    setEmail("rishabh.jain.6112@gmail.com");
+                    setPassword("password123");
+                  } else {
+                    setEmail("");
+                    setPassword("");
+                  }
+                }}
+                className="mt-1 block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-3 text-zinc-900 dark:text-white shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm transition-colors cursor-pointer"
+              >
+                <option value="">Choose a role to sign in...</option>
+                <option value="manager">Fleet Manager</option>
+                <option value="dispatcher">Dispatcher</option>
+                <option value="safety">Safety Officer</option>
+                <option value="finance">Financial Analyst</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-zinc-750 dark:text-zinc-300">
                 Email Address
               </label>
               <div className="relative mt-1">
@@ -99,7 +136,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              <label htmlFor="password" className="block text-sm font-medium text-zinc-750 dark:text-zinc-300">
                 Password
               </label>
               <div className="relative mt-1">
@@ -109,14 +146,22 @@ export default function LoginPage() {
                 <input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 pl-10 pr-3 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm transition-colors"
+                  className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 pl-10 pr-10 py-3 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm transition-colors"
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+                  aria-label="Toggle Password Visibility"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
             </div>
           </div>
