@@ -1,14 +1,8 @@
 import express from "express";
 
-import {
-  authenticate,
-  requireRole,
-} from "../../middleware/authenticate.js";
+import { authenticate, requireRole } from "../../middleware/authenticate.js";
 
-import {
-  createVehicle,
-  getVehicles,
-} from "./vehicle.controller.js";
+import { createVehicle, getVehicles } from "./vehicle.controller.js";
 
 const router = express.Router();
 
@@ -29,12 +23,7 @@ const router = express.Router();
  * 3. createVehicle
  *    - Executes only when authentication and authorization succeed.
  */
-router.post(
-  "/",
-  authenticate,
-  requireRole("Fleet Manager"),
-  createVehicle
-);
+router.post("/", authenticate, requireRole("Fleet Manager"), createVehicle);
 
 /**
  * @route   GET /api/vehicles
@@ -52,10 +41,6 @@ router.post(
  * GET /api/vehicles?status=AVAILABLE
  * GET /api/vehicles?search=GJ01
  */
-router.get(
-  "/",
-  authenticate,
-  getVehicles
-);
+router.get("/", authenticate, getVehicles);
 
 export default router;
