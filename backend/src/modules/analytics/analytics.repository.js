@@ -1,4 +1,5 @@
 import prisma from "../../config/prisma.js";
+import { Prisma } from "@prisma/client";
 
 /**
  * ─────────────────────────────────────────────────────────────────
@@ -224,43 +225,49 @@ export async function getUtilizationByType(baseWhere = {}) {
  * @returns {Promise<Array<{month, fuelCost, maintenanceCost}>>}
  */
 export async function getCostTrendByMonth(vehicleIds, startDate, endDate) {
-  const dateWhere = buildDateWhere(startDate, endDate);
-  const vehicleFilter = { in: vehicleIds };
+  if (!vehicleIds || vehicleIds.length === 0) return [];
 
-  // Raw fuel cost grouped by month using Prisma's raw-ish approach
-  // We do this via groupBy with createdAt in memory grouping (no native month groupBy in Prisma)
-  const [fuelLogs, maintenanceRecords] = await Promise.all([
-    prisma.fuelLog.findMany({
-      where: {
-        vehicleId: vehicleFilter,
-        ...(Object.keys(dateWhere).length > 0 ? { date: dateWhere } : {}),
-      },
-      select: { date: true, cost: true },
-    }),
-    prisma.maintenance.findMany({
-      where: {
-        vehicleId: vehicleFilter,
-        status: "CLOSED",
-        ...(Object.keys(dateWhere).length > 0 ? { completedDate: dateWhere } : {}),
-      },
-      select: { completedDate: true, cost: true },
-    }),
+  // Parse date boundaries for the SQL WHERE clause
+  const startLimit = startDate ? startDate : new Date(0);
+  const endLimit = endDate ? endDate : new Date();
+
+  // Perform database-level aggregation via queryRaw to handle millions of rows efficiently (industry scale)
+  const [fuelRows, maintenanceRows] = await Promise.all([
+    prisma.$queryRaw`
+      SELECT 
+        TO_CHAR(date, 'YYYY-MM') AS "month",
+        SUM(cost)::double precision AS "fuelCost"
+      FROM fuel_logs
+      WHERE "vehicleId" IN (${Prisma.join(vehicleIds)})
+        AND date >= ${startLimit}
+        AND date <= ${endLimit}
+      GROUP BY TO_CHAR(date, 'YYYY-MM')
+    `,
+    prisma.$queryRaw`
+      SELECT 
+        TO_CHAR("completedDate", 'YYYY-MM') AS "month",
+        SUM(cost)::double precision AS "maintenanceCost"
+      FROM maintenances
+      WHERE "vehicleId" IN (${Prisma.join(vehicleIds)})
+        AND status::text = 'CLOSED'
+        AND "completedDate" >= ${startLimit}
+        AND "completedDate" <= ${endLimit}
+      GROUP BY TO_CHAR("completedDate", 'YYYY-MM')
+    `
   ]);
 
-  // Group by YYYY-MM
   const monthMap = {};
 
-  for (const f of fuelLogs) {
-    const key = toMonthKey(f.date);
-    monthMap[key] = monthMap[key] || { fuelCost: 0, maintenanceCost: 0 };
-    monthMap[key].fuelCost += f.cost;
+  for (const r of fuelRows) {
+    const m = r.month;
+    monthMap[m] = monthMap[m] || { fuelCost: 0, maintenanceCost: 0 };
+    monthMap[m].fuelCost = Number(r.fuelCost ?? 0);
   }
 
-  for (const m of maintenanceRecords) {
-    if (!m.completedDate) continue;
-    const key = toMonthKey(m.completedDate);
-    monthMap[key] = monthMap[key] || { fuelCost: 0, maintenanceCost: 0 };
-    monthMap[key].maintenanceCost += m.cost;
+  for (const r of maintenanceRows) {
+    const m = r.month;
+    monthMap[m] = monthMap[m] || { fuelCost: 0, maintenanceCost: 0 };
+    monthMap[m].maintenanceCost = Number(r.maintenanceCost ?? 0);
   }
 
   return Object.entries(monthMap)
