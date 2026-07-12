@@ -19,7 +19,7 @@ app.use(cookieParser());
 
 // ─── Routes ─────────────────────────────────────────────────────────────────
 app.use("/api/auth", authRouter);
-app.use("/api/vehicle", vehicleRouter);
+app.use("/api/vehicles", vehicleRouter);
 
 
 // ─── Health Check ────────────────────────────────────────────────────────────
