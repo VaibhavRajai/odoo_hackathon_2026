@@ -1,52 +1,41 @@
 import { randomInt } from "crypto";
-import bcrypt from "bcryptjs";
 import redis from "../../../config/redis.js";
 import mailer from "../../../config/mailer.js";
 import { logger, LOG_EVENTS } from "../../../utils/logger.js";
-import {
-  REDIS_KEY_OTP,
-  OTP_EXPIRY_SECONDS,
-  OTP_MAX_ATTEMPTS,
-} from "../../../constants/auth.constants.js";
-
-const BCRYPT_ROUNDS = 10;
+import { REDIS_KEY_OTP, OTP_EXPIRY_SECONDS, OTP_MAX_ATTEMPTS } from "../../../constants/auth.constants.js";
 
 /**
- * OTPService — generates, verifies, and manages OTP lifecycle in Redis.
- * OTPs are never stored in plain text — only bcrypt hashes are persisted.
+ * OTPService — plain 6-digit OTP stored in Redis with a 10-minute TTL.
+ * No hashing — kept simple for hackathon. OTP is deleted immediately on success.
  */
 
 /**
- * Generates a cryptographically secure 6-digit OTP, hashes it, stores it in Redis,
- * and delivers it to the user via email.
+ * Generates a 6-digit OTP, stores it in Redis, and sends it via email.
  *
- * @param {string} userId - The user's database ID (used as Redis key).
- * @param {string} email - The email address to deliver the OTP to.
- * @returns {Promise<void>}
+ * @param {string} userId
+ * @param {string} email
+ * @param {string} name - Recipient's display name for the email.
  */
-export async function generateOTP(userId, email) {
-  // Cryptographically secure 6-digit OTP (100000–999999)
+export async function generateOTP(userId, email, name) {
   const otp = randomInt(100000, 1000000).toString();
-  const otpHash = await bcrypt.hash(otp, BCRYPT_ROUNDS);
-  const expiresAt = Date.now() + OTP_EXPIRY_SECONDS * 1000;
-
   const key = REDIS_KEY_OTP(userId);
-  const payload = JSON.stringify({ otpHash, attempts: 0, expiresAt });
 
-  await redis.setex(key, OTP_EXPIRY_SECONDS, payload);
+  await redis.setex(key, OTP_EXPIRY_SECONDS, JSON.stringify({ otp, attempts: 0 }));
 
   await mailer.sendMail({
-    from: `"Security" <${process.env.EMAIL}>`,
+    from: process.env.SMTP_FROM,
     to: email,
-    subject: "Your Password Reset OTP",
+    subject: "TransitOps — Password Reset OTP",
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto;">
-        <h2 style="color: #1a1a1a;">Password Reset Request</h2>
-        <p style="color: #555;">Use the OTP below to reset your password. It is valid for <strong>10 minutes</strong>.</p>
-        <div style="font-size: 36px; font-weight: bold; letter-spacing: 12px; color: #2563eb; padding: 20px 0;">
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 32px; border: 1px solid #e5e7eb; border-radius: 8px;">
+        <h2 style="margin: 0 0 8px; color: #111827;">Password Reset</h2>
+        <p style="color: #6b7280; margin: 0 0 24px;">Hi ${name}, use the code below to reset your TransitOps password.</p>
+        <div style="font-size: 40px; font-weight: 700; letter-spacing: 14px; color: #2563eb; padding: 20px; background: #eff6ff; border-radius: 8px; text-align: center;">
           ${otp}
         </div>
-        <p style="color: #999; font-size: 13px;">If you did not request a password reset, please ignore this email.</p>
+        <p style="color: #9ca3af; font-size: 13px; margin-top: 24px;">
+          This code expires in <strong>10 minutes</strong>. If you did not request this, you can safely ignore this email.
+        </p>
       </div>
     `,
   });
@@ -55,11 +44,12 @@ export async function generateOTP(userId, email) {
 }
 
 /**
- * Verifies a user-supplied OTP against the stored hash.
- * Increments the attempt counter on failure and deletes the OTP on success.
+ * Verifies the OTP entered by the user.
+ * Deletes the OTP from Redis immediately on success.
+ * Increments the attempt counter on failure.
  *
- * @param {string} userId - The user's database ID.
- * @param {string} inputOtp - The raw OTP entered by the user.
+ * @param {string} userId
+ * @param {string} inputOtp
  * @returns {Promise<{ valid: boolean, reason?: string }>}
  */
 export async function verifyOTP(userId, inputOtp) {
@@ -72,59 +62,35 @@ export async function verifyOTP(userId, inputOtp) {
 
   const data = JSON.parse(raw);
 
-  // Check expiry
-  if (Date.now() > data.expiresAt) {
-    await redis.del(key);
-    return { valid: false, reason: "OTP has expired." };
-  }
-
-  // Check max attempts
   if (data.attempts >= OTP_MAX_ATTEMPTS) {
     await redis.del(key);
     logger.warn(LOG_EVENTS.OTP_FAILED, { userId, reason: "Max attempts exceeded" });
-    return { valid: false, reason: "Maximum OTP attempts exceeded. Please request a new OTP." };
+    return { valid: false, reason: "Too many incorrect attempts. Please request a new OTP." };
   }
 
-  const isMatch = await bcrypt.compare(inputOtp, data.otpHash);
-
-  if (!isMatch) {
+  if (inputOtp !== data.otp) {
     data.attempts += 1;
     const ttl = await redis.ttl(key);
     await redis.setex(key, ttl > 0 ? ttl : OTP_EXPIRY_SECONDS, JSON.stringify(data));
-    logger.warn(LOG_EVENTS.OTP_FAILED, {
-      userId,
-      attempts: data.attempts,
-      attemptsRemaining: OTP_MAX_ATTEMPTS - data.attempts,
-    });
+    logger.warn(LOG_EVENTS.OTP_FAILED, { userId, attempts: data.attempts });
     return { valid: false, reason: "Invalid OTP." };
   }
 
-  // Success — delete OTP immediately
+  // Correct — delete immediately
   await redis.del(key);
   logger.info(LOG_EVENTS.OTP_VERIFIED, { userId });
   return { valid: true };
 }
 
 /**
- * Deletes the existing OTP and issues a fresh one (resend flow).
+ * Deletes any existing OTP and sends a fresh one.
  *
  * @param {string} userId
  * @param {string} email
- * @returns {Promise<void>}
+ * @param {string} name
  */
-export async function resendOTP(userId, email) {
-  await deleteOTP(userId);
-  await generateOTP(userId, email);
+export async function resendOTP(userId, email, name) {
+  await redis.del(REDIS_KEY_OTP(userId));
+  await generateOTP(userId, email, name);
   logger.info(LOG_EVENTS.OTP_RESENT, { userId, email });
-}
-
-/**
- * Deletes the OTP for a given user from Redis.
- *
- * @param {string} userId
- * @returns {Promise<void>}
- */
-export async function deleteOTP(userId) {
-  const key = REDIS_KEY_OTP(userId);
-  await redis.del(key);
 }

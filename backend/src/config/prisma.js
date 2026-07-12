@@ -1,22 +1,17 @@
-import { PrismaClient } from "../../generated/prisma/client.js";
+import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 /**
  * Singleton Prisma client.
- * Import this everywhere DB access is needed — never instantiate a second PrismaClient.
+ *
+ * Prisma 7 requires an explicit driver adapter — `PrismaPg` wraps the
+ * standard `pg` library and passes the connection string from the environment.
  */
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+
 const prisma = new PrismaClient({
-  log: [
-    { level: "warn", emit: "event" },
-    { level: "error", emit: "event" },
-  ],
-});
-
-prisma.$on("warn", (e) => {
-  console.warn("[Prisma] Warning:", e.message);
-});
-
-prisma.$on("error", (e) => {
-  console.error("[Prisma] Error:", e.message);
+  adapter,
+  log: ["warn", "error"],
 });
 
 export default prisma;
