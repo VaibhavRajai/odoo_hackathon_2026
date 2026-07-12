@@ -28,10 +28,12 @@ TransitOps solves these issues by establishing a single source of truth for the 
 The following features are **fully implemented** and functional in the repository:
 
 ### 🔐 Authentication & Authorization
-- **Session-Based Authentication**: Custom cookie-backed session storage (`sid`) managed via Redis.
+- **Session-Based Authentication**: Custom cookie-backed session storage (`sid`) managed via Redis—fully revocable (no JWTs).
 - **Role-Based Access Control (RBAC)**: Backend route middleware validation checking roles against pre-seeded profiles (`Fleet Manager`, `Dispatcher`, `Safety Officer`, `Financial Analyst`).
 - **Autofill Helper**: Dropdown selector on the login portal to immediately sign in as any pre-seeded role.
 - **Secure Password Reset**: Multi-step verification flow utilizing 6-digit OTP codes sent via email/SMTP (with console-logging fallbacks for local environments).
+- **Account Lockout**: 5 failed login attempts trigger a 15-minute lockout, tracked per-user in Redis.
+- **Rate Limiting**: Redis-backed rate limiters on login, forgot-password, verify-OTP, and reset-password endpoints to prevent brute-force attacks.
 
 ### 🚛 Vehicle Registry
 - **Master Fleet Database**: Register, edit, and delete vehicles with inputs for registration number (unique), name/model, type, load capacity, odometer, and acquisition cost.
@@ -39,21 +41,46 @@ The following features are **fully implemented** and functional in the repositor
 - **Conflict Prevention**: Displays real-time validation feedback (e.g., duplicate registration numbers, capacity $\le 0$).
 
 ### 🔧 Maintenance Management
-- **Downtime Scheduling**: Log maintenance events (Oil Change, Brake Repair, etc.) specifying costs and start dates.
+- **Downtime Scheduling**: Log maintenance events (Oil Change, Brake Repair, Engine Overhaul, etc.) specifying costs and start dates.
 - **Automated Vehicle Lockout**: Registering an `ACTIVE` maintenance log automatically transitions the target vehicle's status to `IN_SHOP`.
 - **Downtime Release**: Closing a maintenance ticket (`CLOSED`) automatically restores the vehicle status back to `AVAILABLE`.
 - **Logs Auditing**: Maintenance table with sorting, pagination, and status filters.
 
-### 👥 Driver & Safety Management
-- **Driver Records**: Add, edit, and audit driver licenses, categories (`LMV_TR`, `HMV`), contact information, and active statuses.
-- **License Expiry Tracking**: Highlight and countdown tracking for expiring and expired commercial driver licenses.
-- **Trips Tracking**: Audit active and completed dispatch sheets, tracking source, destination, distances, cargo weights, and current statuses.
+### ⛽ Fuel Tracking
+- **Fuel Purchase Logs**: Record fuel purchases per vehicle with liters, cost per liter, total cost, and date.
+- **Trip Linking**: Optionally link fuel transactions to specific trips for per-route efficiency analysis.
+- **Efficiency Metrics**: Track fuel efficiency trends and odometer updates per vehicle.
+
+### 💰 Expense Management
+- **Miscellaneous Costs**: Log per-vehicle expenses categorized as Toll, Parking, Fine, or Other.
+- **Cost KPI Segregation**: Operational cost KPIs derived from fuel and maintenance only—miscellaneous expenses tracked separately for auditing.
+
+### 👥 Driver & Safety Management (Safety Officer Role)
+- **Safety & Compliance Hub**: KPI overview (Total Drivers, Available, Expiring Soon, Suspended) with bar chart for driver status distribution and pie chart for license validity breakdown.
+- **Driver Records**: Full CRUD with search, filters (status, category, expiry), and sortable columns (name, expiry, safety score). Status management dropdown with manual overrides (ON_TRIP is locked to trip lifecycle).
+- **License Expiry Tracking**: Highlight and countdown tracking for expiring and expired commercial driver licenses; auto-suspension for expired licenses with email renewal reminders.
+- **Safety Rating System**: Per-trip driver safety ratings (1–5) submitted by Dispatchers, averaged into an overall driver safety score. Top 5 leaderboard displayed on the dashboard.
+- **License Weight Enforcement**: Business rules enforce `LMV_TR` ≤ 7,500 kg, `MGV` ≤ 12,000 kg, `HMV` > 12,000 kg; higher categories cover lower ones.
+- **Compliance View**: Drivers grouped by risk tier—Compliant, Expiring Soon, Non-Compliant (expired), and Suspended—for rapid auditing.
+- **Trips Tracking**: Read-only trips page with Leaflet.js map visualization and filterable trip table for monitoring driver activity.
+- **License Validation**: On-demand batch validation endpoint to scan all drivers and auto-suspend those with expired licenses.
+
+### 📋 Dispatch Management (Dispatcher Role)
+- **Dispatcher Control Console**: Centralized dashboard showing trip counts (Draft, Dispatched, Completed, Cancelled) and real-time resource availability (available drivers & vehicles).
+- **Kanban Dispatch Board**: Drag-and-drop trip cards across DRAFT → DISPATCHED → COMPLETED / CANCELLED columns with status transition validation.
+- **Create Trip Wizard**: Plan routes with OSRM auto-calculated distances, assign vehicles with cargo weight validation, and select drivers filtered by license category vs vehicle weight class (with a recommended badge for best match).
+- **Trip Completion & Fuel Logging**: Record final odometer, fuel consumed (liters), and fuel cost upon trip completion.
+- **Post-Trip Safety Rating**: Prompt to rate driver safety (1–5 stars) immediately after completing a trip.
+- **Conflict Prevention**: Prevents dispatching vehicles in `IN_SHOP` or `RETIRED` status; enforces cargo weight ≤ vehicle capacity.
+- **Expense Linking**: Per-trip expense tracking alongside dispatch logs.
 
 ### 📊 Role-Specific Dashboards
-- **Fleet Manager**: Live vehicle status aggregates, interactive operations & cost dashboards, and registry grid.
-- **Dispatcher**: Displays route scores, traffic logs, and active dispatch logs.
+Each role lands on a dedicated dashboard after login with tailored KPIs and tools:
+
+- **Fleet Manager**: Live vehicle status aggregates, interactive operations & cost dashboards, registry grid, and charts (vehicle status distribution, vehicles by type, fleet utilization, regional distribution, maintenance cost by type).
+- **Dispatcher**: Dispatcher Control Console with trip status KPIs, resource availability panels, and quick-access "Create Trip" button. Full Kanban dispatch board for managing trip lifecycle.
+- **Safety Officer**: Safety & Compliance Hub with driver KPI cards, license validity & status distribution charts, Safety Score Leaderboard, License Expiry Watchlist, and navigation to Drivers, Compliance, and Trips pages.
 - **Financial Analyst**: Evaluates operational budgets, expenditures, and cost variances.
-- **Safety Officer**: Real-time compliance feed displaying harsh braking and speeding warnings, along with interactive Leaflet.js map tracking active routes.
 
 ---
 
@@ -65,10 +92,11 @@ The following status tracks our modular milestones:
 | :--- | :--- | :--- |
 | **Driver Management** | ✅ *Implemented* | Introduced `Driver` entity with license numbers, expiration dates, and compliance states. |
 | **Trip Dispatch** | ✅ *Implemented* | Added `Trip` model linking drivers, vehicles, cargo weights, routes, and dispatch status transitions. |
-| **Fuel Tracking** | ✅ *Implemented* | Create `FuelLog` model to track transactions, efficiency metrics, and odometer updates. |
-| **Telemetry Charts** | ✅ *Implemented* | Incorporated interactive Chart.js widgets to plot fuel, cost variance, and fleet utilization trends. |
+| **Fuel Tracking** | ✅ *Implemented* | Created `FuelLog` model to track transactions, efficiency metrics, and odometer updates. |
+| **Expense Tracking** | ✅ *Implemented* | Created `Expense` model for per-vehicle miscellaneous costs (Toll, Parking, Fine, Other) with cost KPI segregation. |
+| **Telemetry Charts** | ✅ *Implemented* | Incorporated interactive Chart.js and Recharts widgets to plot fuel, cost variance, and fleet utilization trends. |
 | **Leaflet Maps** | ✅ *Implemented* | Integrated Leaflet.js and OpenStreetMap to render dispatch locations and track active vehicle routes. |
-| **Excel/PDF Export** | ✅ *Implemented* | Added backend Puppeteer worker services to download audit-ready compliance sheets and financial summaries. |
+| **Excel/PDF Export** | ✅ *Implemented* | Added backend Puppeteer worker services and client-side jsPDF/xlsx for audit-ready compliance sheets, financial summaries, and exports. |
 
 ---
 
@@ -81,6 +109,10 @@ The system enforces strict operational logic to maintain database integrity and 
 3. **Maintenance Release**: Closing a maintenance ticket (`CLOSED` status) returns the vehicle to `AVAILABLE`.
 4. **Invalid Numeric Inputs**: Load capacities must be $> 0$ (up to $30,000$ kg); odometers (up to $1,500,000$ km) and acquisition costs (up to $₹10,00,00,000$) must be $\ge 0$.
 5. **Session Safety**: Password resets immediately invalidate and delete all active Redis sessions for the target user.
+6. **Account Lockout**: 5 consecutive failed login attempts lock the user out for 15 minutes (tracked in Redis).
+7. **Rate Throttling**: Login, forgot-password, verify-OTP, and reset-password endpoints are throttled with Redis-backed rate limiters.
+8. **License–Weight Matching**: `LMV_TR` licenses are restricted to vehicles ≤ 7,500 kg, `MGV` to ≤ 12,000 kg, and `HMV` covers all heavier vehicles.
+9. **Auto-Suspension**: Drivers with expired licenses are automatically moved to `SUSPENDED` status, preventing dispatch assignment.
 
 ---
 
@@ -133,10 +165,14 @@ The entire application stack is orchestrated via [docker-compose.yml](file:///c:
   - Added `@@index([createdAt])` index to optimize search and sorting pagination speeds.
   - Added foreign key index `@@index([roleId])` inside the `User` model to speed up joins when retrieving user roles.
 
-### 4. Environment Variables Interpolation
+### 4. Database Administration (pgAdmin)
+- **pgAdmin 4** is included as a Docker service for database inspection and query execution.
+- Access it at `http://localhost:5050` and configure a connection to the `db` host on port `5432`.
+
+### 5. Environment Variables Interpolation
 Security tokens, port configurations, and system endpoints are decoupled from code and injected at startup. Variables inside [docker-compose.yml](file:///c:/Users/Rishabh%2520Jain/Desktop/github/odoo_hackathon_2026/docker-compose.yml) interpolate root `.env` properties, forwarding host configurations (such as SMTP credentials or database connections) down to the internal service layers.
 
-### 5. Next.js Compile Optimization (Turbopack)
+### 6. Next.js Compile Optimization (Turbopack)
 - The Next.js frontend is built using Next.js 16 and Next Turbopack to deliver fast compilation, optimized asset bundling, and minimal build payloads.
 - Layouts and views split static pages (e.g. `/dashboard/fleet-manager`) from dynamic segment routes (e.g. `/dashboard/safety-officer/driver/[id]`) for fast client loading and high-fidelity rendering.
 
