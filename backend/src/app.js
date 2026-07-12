@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRouter from "./modules/auth/auth.routes.js";
+import vehicleRouter from "./modules/vehicles/vehicle.routes.js"
 
 const app = express();
 
@@ -18,6 +19,8 @@ app.use(cookieParser());
 
 // ─── Routes ─────────────────────────────────────────────────────────────────
 app.use("/api/auth", authRouter);
+app.use("/api/vehicle", vehicleRouter);
+
 
 // ─── Health Check ────────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {
