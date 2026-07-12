@@ -8,6 +8,7 @@ import driverRouter from "./modules/driver/driver.routes.js";
 import tripRouter from "./modules/trip/trip.routes.js";
 import maintenanceRouter from "./modules/maintenance/maintenance.routes.js";
 import expenseRouter from "./modules/expense/expense.routes.js";
+import fuelLogRouter from "./modules/fuelLog/fuelLog.routes.js";
 import dashboardRouter from "./modules/dashboard/dashboard.routes.js";
 
 const app = express();
@@ -31,6 +32,7 @@ app.use("/api/drivers", driverRouter);
 app.use("/api/trips", tripRouter);
 app.use("/api/maintenance", maintenanceRouter);
 app.use("/api/expenses", expenseRouter);
+app.use("/api/fuel-logs", fuelLogRouter);
 app.use("/api/dashboard", dashboardRouter);
 
 // ─── Health Check ────────────────────────────────────────────────────────────
