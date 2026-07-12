@@ -12,6 +12,9 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-blue-500: #547cf5;
+  --color-blue-600: #4169e1;
+  --color-blue-700: #2b52c7;
 }
 
 .dark {
