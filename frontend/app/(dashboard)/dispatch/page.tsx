@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../../api-client";
+import { Star } from "lucide-react";
 
 interface Trip {
   id: string;
@@ -11,7 +12,13 @@ interface Trip {
   cargoWeight: number;
   status: string;
   vehicle: { registrationNumber: string; maxLoadCapacity: number; name: string };
-  driver: { name: string; licenseNumber: string };
+  driver: { id: string; name: string; licenseNumber: string };
+}
+
+interface RatingPrompt {
+  tripId: string;
+  driverId: string;
+  driverName: string;
 }
 
 const STATUSES = ["DRAFT", "DISPATCHED", "COMPLETED", "CANCELLED"];
@@ -32,6 +39,11 @@ export default function DispatchPage() {
   const [finalOdometer, setFinalOdometer] = useState("");
   const [fuelLiters, setFuelLiters] = useState("");
   const [fuelCost, setFuelCost] = useState("");
+
+  // Post-completion safety rating prompt
+  const [ratingPrompt, setRatingPrompt] = useState<RatingPrompt | null>(null);
+  const [ratingScore, setRatingScore] = useState(5);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -103,6 +115,7 @@ export default function DispatchPage() {
     setLoading(true);
     setError("");
     try {
+      const completedTrip = trips.find(t => t.id === showCompleteModal);
       await apiFetch(`/api/trips/${showCompleteModal}/complete`, {
         method: "POST",
         body: JSON.stringify({
@@ -114,6 +127,16 @@ export default function DispatchPage() {
       setShowCompleteModal(null);
       setFinalOdometer(""); setFuelLiters(""); setFuelCost("");
       fetchData();
+
+      // Prompt for the driver's safety rating right after a successful completion
+      if (completedTrip) {
+        setRatingScore(5);
+        setRatingPrompt({
+          tripId: completedTrip.id,
+          driverId: completedTrip.driver.id,
+          driverName: completedTrip.driver.name,
+        });
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message || "Failed to complete trip");
@@ -122,6 +145,22 @@ export default function DispatchPage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSubmitRating = async () => {
+    if (!ratingPrompt) return;
+    setRatingSubmitting(true);
+    try {
+      await apiFetch(`/api/drivers/${ratingPrompt.driverId}/safety-rating`, {
+        method: "POST",
+        body: JSON.stringify({ tripId: ratingPrompt.tripId, score: ratingScore }),
+      });
+      setRatingPrompt(null);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to submit safety rating.");
+    } finally {
+      setRatingSubmitting(false);
     }
   };
 
@@ -240,6 +279,51 @@ export default function DispatchPage() {
                 <button type="submit" disabled={loading} className="px-4 py-2 text-white bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors duration-300 disabled:opacity-50">Complete Trip</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Post-completion Safety Rating Prompt */}
+      {ratingPrompt && (
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm transition-all duration-300">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl border border-gray-100 dark:border-zinc-800 max-w-sm w-full p-6 text-center transition-colors duration-300">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Rate {ratingPrompt.driverName}&apos;s Safety</h2>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1 mb-5">How did this driver do on this trip, safety-wise?</p>
+            <div className="flex items-center justify-center gap-2 mb-6">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setRatingScore(n)}
+                  aria-label={`${n} star${n === 1 ? "" : "s"}`}
+                  className="p-1 cursor-pointer"
+                >
+                  <Star
+                    className={`w-8 h-8 transition-colors ${
+                      n <= ratingScore ? "text-amber-500 fill-amber-500" : "text-gray-300 dark:text-zinc-700"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setRatingPrompt(null)}
+                disabled={ratingSubmitting}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-lg font-medium transition-colors duration-300 disabled:opacity-50"
+              >
+                Skip
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitRating}
+                disabled={ratingSubmitting}
+                className="px-4 py-2 text-white bg-amber-500 hover:bg-amber-600 rounded-lg font-medium transition-colors duration-300 disabled:opacity-50"
+              >
+                {ratingSubmitting ? "Submitting..." : "Submit Rating"}
+              </button>
+            </div>
           </div>
         </div>
       )}

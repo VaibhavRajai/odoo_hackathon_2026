@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { apiFetch } from "../api-client";
 import { useTheme } from "../theme-provider";
-import { LogOut, User as UserIcon, Shield, Layers, Calendar, BarChart2, Sun, Moon, Menu, X, Truck, Wrench, ChevronLeft, ChevronRight, Users, MapPin, ShieldCheck, Map } from "lucide-react";
+import { LogOut, User as UserIcon, Shield, Layers, Calendar, BarChart2, Sun, Moon, Menu, X, Truck, Wrench, ChevronLeft, ChevronRight, Users, MapPin, ShieldCheck, Map, Fuel } from "lucide-react";
 
 interface UserSession {
   userId: string;
@@ -238,20 +238,36 @@ export default function DashboardLayout({
             )}
 
             {user.role === "Dispatcher" && (
-              <a
-                href="/dispatch"
-                title="Dispatch Board"
-                className={`flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors ${
-                  isCollapsed ? "justify-center px-1" : ""
-                } ${
-                  pathname.startsWith("/dispatch")
-                    ? "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-900 dark:text-white font-semibold"
-                    : "text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/30 hover:text-zinc-900 dark:hover:text-white"
-                }`}
-              >
-                <Map className={`h-4 w-4 shrink-0 ${pathname.startsWith("/dispatch") ? "text-blue-500" : ""}`} /> 
-                {!isCollapsed && <span>Dispatch Board</span>}
-              </a>
+              <>
+                <a
+                  href="/dispatch"
+                  title="Dispatch Board"
+                  className={`flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors ${
+                    isCollapsed ? "justify-center px-1" : ""
+                  } ${
+                    pathname.startsWith("/dispatch") && !pathname.startsWith("/dispatch/expenses")
+                      ? "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-900 dark:text-white font-semibold"
+                      : "text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/30 hover:text-zinc-900 dark:hover:text-white"
+                  }`}
+                >
+                  <Map className={`h-4 w-4 shrink-0 ${pathname.startsWith("/dispatch") && !pathname.startsWith("/dispatch/expenses") ? "text-blue-500" : ""}`} /> 
+                  {!isCollapsed && <span>Dispatch Board</span>}
+                </a>
+                <a
+                  href="/dispatch/expenses"
+                  title="Fuel & Expenses"
+                  className={`flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors ${
+                    isCollapsed ? "justify-center px-1" : ""
+                  } ${
+                    pathname.startsWith("/dispatch/expenses")
+                      ? "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-900 dark:text-white font-semibold"
+                      : "text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/30 hover:text-zinc-900 dark:hover:text-white"
+                  }`}
+                >
+                  <Fuel className={`h-4 w-4 shrink-0 ${pathname.startsWith("/dispatch/expenses") ? "text-amber-500" : ""}`} /> 
+                  {!isCollapsed && <span>Fuel & Expenses</span>}
+                </a>
+              </>
             )}
           </nav>
         </div>
