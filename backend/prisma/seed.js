@@ -256,9 +256,9 @@ async function seed() {
 
   console.log(`  ✔ Seeded ${activeMaintenanceConfigs.length} active and ${closedMaintenanceConfigs.length} closed maintenance records.`);
 
-  // 3. Demo Drivers, Vehicles, and Trips — gives the Safety Officer's
-  //    /drivers, /trips, and /dashboard pages something real to show,
-  //    since no Dispatcher module exists yet to create this data.
+  // 6. Demo Drivers, Trips, and two extra Vehicles — gives the Safety
+  //    Officer's /drivers, /trips, and /dashboard pages something real to
+  //    show, since no Dispatcher module exists yet to create this data.
   const drivers = [
     {
       name: "Alex Menon",
@@ -321,7 +321,9 @@ async function seed() {
     },
   ];
 
-  const vehicleMap = {};
+  // Reuses the `vehicleMap` declared in step 3 — keyed there by
+  // registrationNumber, keyed here by name; different key strings, same map,
+  // no collision.
   for (const v of vehicles) {
     const vehicle = await prisma.vehicle.upsert({
       where: { registrationNumber: v.registrationNumber },
