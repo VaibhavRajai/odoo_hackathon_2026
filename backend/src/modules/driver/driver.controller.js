@@ -28,15 +28,17 @@ export async function getDrivers(req, res, next) {
 }
 
 /**
- * Drivers eligible for trip assignment: AVAILABLE status AND not suspended/expired.
- * This is the endpoint the Dispatcher's trip-create form reads from —
- * `isEligible` is computed the same way everywhere (driver.service.js).
+ * Drivers eligible for trip assignment, ranked into a recommendation.
+ * This is the endpoint the Dispatcher's trip-create form reads from.
+ *
+ * @query vehicleId - optional; when given, also filters to drivers whose
+ *   license category covers that vehicle's weight class and ranks the
+ *   top match as `recommended: true`.
  */
 export async function getAvailableDrivers(req, res, next) {
   try {
-    const drivers = await driverService.getDrivers({ status: "AVAILABLE" });
-    const eligible = drivers.filter((d) => d.isEligible);
-    return res.status(200).json({ success: true, count: eligible.length, data: eligible });
+    const drivers = await driverService.getAvailableDrivers(req.query.vehicleId);
+    return res.status(200).json({ success: true, count: drivers.length, data: drivers });
   } catch (error) {
     next(error);
   }

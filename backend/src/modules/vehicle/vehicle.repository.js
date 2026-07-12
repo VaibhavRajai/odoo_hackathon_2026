@@ -62,4 +62,42 @@ export async function countVehicles(where = {}) {
   return prisma.vehicle.count({
     where,
   });
+}
+
+/**
+ * Total fuel + maintenance cost per vehicle, for a given set of vehicle IDs.
+ * One grouped aggregate query per cost source (not N+1 per vehicle).
+ *
+ * Maintenance cost sums ALL records regardless of ACTIVE/CLOSED — the cost
+ * was incurred when logged, not when the record closes.
+ *
+ * @param {string[]} vehicleIds
+ * @returns {Promise<Record<string, { totalFuelCost: number, totalMaintenanceCost: number, totalOperationalCost: number }>>}
+ */
+export async function getCostTotalsForVehicles(vehicleIds) {
+  if (vehicleIds.length === 0) return {};
+
+  const [fuelSums, maintenanceSums] = await Promise.all([
+    prisma.fuelLog.groupBy({
+      by: ["vehicleId"],
+      where: { vehicleId: { in: vehicleIds } },
+      _sum: { cost: true },
+    }),
+    prisma.maintenance.groupBy({
+      by: ["vehicleId"],
+      where: { vehicleId: { in: vehicleIds } },
+      _sum: { cost: true },
+    }),
+  ]);
+
+  const fuelMap = Object.fromEntries(fuelSums.map((r) => [r.vehicleId, r._sum.cost ?? 0]));
+  const maintenanceMap = Object.fromEntries(maintenanceSums.map((r) => [r.vehicleId, r._sum.cost ?? 0]));
+
+  return Object.fromEntries(
+    vehicleIds.map((id) => {
+      const totalFuelCost = fuelMap[id] ?? 0;
+      const totalMaintenanceCost = maintenanceMap[id] ?? 0;
+      return [id, { totalFuelCost, totalMaintenanceCost, totalOperationalCost: totalFuelCost + totalMaintenanceCost }];
+    })
+  );
 }

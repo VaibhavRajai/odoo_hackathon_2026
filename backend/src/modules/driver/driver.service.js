@@ -1,5 +1,6 @@
 import * as driverRepository from "./driver.repository.js";
 import { sendLicenseRenewalEmail } from "./driver.mailer.js";
+import { licenseCovers } from "../../utils/licenseRules.js";
 import {
   validateDriverName,
   validateContactNumber,
@@ -225,6 +226,44 @@ export async function getDrivers(filters = {}) {
   }
 
   return drivers;
+}
+
+/**
+ * Drivers eligible for trip assignment, optionally narrowed to those
+ * licensed for a specific vehicle, ranked into a recommendation.
+ *
+ * Ranking: safety score first (small penalty if the license is expiring
+ * soon — still eligible, just not the first choice), then rating count
+ * (more completed/rated trips) as an experience tie-break. The top result
+ * is flagged `recommended: true` for the dispatch-create form to
+ * auto-select and badge.
+ *
+ * @param {string} [vehicleId] - If given, drivers whose license category
+ *   doesn't cover this vehicle's weight class are excluded entirely.
+ */
+export async function getAvailableDrivers(vehicleId) {
+  let vehicle = null;
+  if (vehicleId) {
+    vehicle = await driverRepository.findVehicleById(vehicleId);
+    if (!vehicle) fail("Vehicle not found.", 404);
+  }
+
+  const drivers = await getDrivers({ status: "AVAILABLE" });
+  let eligible = drivers.filter((d) => d.isEligible);
+
+  if (vehicle) {
+    eligible = eligible.filter((d) => licenseCovers(d.licenseCategory, vehicle));
+  }
+
+  const rankScore = (d) => d.safetyScore - (d.expiryStatus === "EXPIRING_SOON" ? 0.5 : 0);
+
+  const ranked = [...eligible].sort((a, b) => {
+    const diff = rankScore(b) - rankScore(a);
+    if (diff !== 0) return diff;
+    return b.safetyRatingCount - a.safetyRatingCount;
+  });
+
+  return ranked.map((d, index) => ({ ...d, recommended: index === 0 }));
 }
 
 /**

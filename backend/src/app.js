@@ -7,6 +7,7 @@ import vehicleRouter from "./modules/vehicle/vehicle.routes.js";
 import driverRouter from "./modules/driver/driver.routes.js";
 import tripRouter from "./modules/trip/trip.routes.js";
 import maintenanceRouter from "./modules/maintenance/maintenance.routes.js";
+import expenseRouter from "./modules/expense/expense.routes.js";
 import dashboardRouter from "./modules/dashboard/dashboard.routes.js";
 
 const app = express();
@@ -29,6 +30,7 @@ app.use("/api/vehicles", vehicleRouter);
 app.use("/api/drivers", driverRouter);
 app.use("/api/trips", tripRouter);
 app.use("/api/maintenance", maintenanceRouter);
+app.use("/api/expenses", expenseRouter);
 app.use("/api/dashboard", dashboardRouter);
 
 // ─── Health Check ────────────────────────────────────────────────────────────

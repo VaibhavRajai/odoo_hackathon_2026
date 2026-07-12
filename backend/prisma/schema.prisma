@@ -71,6 +71,7 @@ model Vehicle {
   trips               Trip[]
   maintenances        Maintenance[]
   fuelLogs            FuelLog[]
+  expenses            Expense[]
 
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
@@ -196,6 +197,7 @@ model Trip {
 
   safetyRating    SafetyRating?
   fuelLogs        FuelLog[]
+  expenses        Expense[]
 
   @@index([status])
   @@index([driverId])
@@ -225,6 +227,35 @@ model FuelLog {
 
   @@index([vehicleId])
   @@map("fuel_logs")
+}
+
+/**
+ * Expense
+ *
+ * Miscellaneous per-vehicle costs that aren't fuel or maintenance — tolls,
+ * parking, fines, etc. Kept as its own entity per the spec's data model
+ * (Maintenance Logs, Fuel Logs, and Expenses are listed separately).
+ * Not part of the Fuel+Maintenance "operational cost" KPI formula — that
+ * formula is defined by the spec as exactly those two, nothing else.
+ */
+model Expense {
+  id          String   @id @default(uuid())
+  type        String   // e.g. "Toll", "Parking", "Fine", "Other"
+  amount      Float
+  date        DateTime @default(now())
+  description String?
+
+  vehicleId   String
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id])
+
+  tripId      String?
+  trip        Trip?    @relation(fields: [tripId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([vehicleId])
+  @@map("expenses")
 }
 
 /**

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../../../api-client";
-import { Truck, CheckCircle2, ChevronLeft, Loader2, Weight } from "lucide-react";
+import { Truck, CheckCircle2, ChevronLeft, Loader2, Weight, Sparkles } from "lucide-react";
 import { LocationInput } from "../../../../components/LocationInput";
 
 interface Vehicle {
@@ -17,6 +17,10 @@ interface Driver {
   id: string;
   name: string;
   licenseNumber: string;
+  licenseCategory: "LMV_TR" | "MGV" | "HMV";
+  safetyScore: number;
+  safetyRatingCount: number;
+  recommended: boolean;
 }
 
 export default function CreateTripPage() {
@@ -40,19 +44,43 @@ export default function CreateTripPage() {
   const [showSplash, setShowSplash] = useState(false);
 
   useEffect(() => {
-    async function loadResources() {
+    async function loadVehicles() {
       try {
         const vRes = await apiFetch("/api/vehicles?status=AVAILABLE");
         if (vRes.success) setAvailableVehicles(vRes.data);
-        
-        const dRes = await apiFetch("/api/drivers/available");
-        if (dRes.success) setAvailableDrivers(dRes.data);
       } catch (e) {
-        console.error("Failed to load resources:", e);
+        console.error("Failed to load vehicles:", e);
       }
     }
-    loadResources();
+    loadVehicles();
   }, []);
+
+  // Re-fetch eligible drivers whenever the selected vehicle changes — the
+  // backend filters by license-category-vs-vehicle-weight-class and ranks
+  // the best match as `recommended`.
+  useEffect(() => {
+    async function loadDrivers() {
+      try {
+        const query = vehicleId ? `?vehicleId=${vehicleId}` : "";
+        const dRes = await apiFetch(`/api/drivers/available${query}`);
+        if (!dRes.success) return;
+        const drivers: Driver[] = dRes.data;
+        setAvailableDrivers(drivers);
+
+        // Auto-select the recommended driver if nothing is picked yet, or
+        // the previously picked driver is no longer eligible for this vehicle.
+        const stillEligible = drivers.some((d) => d.id === driverId);
+        if (!stillEligible) {
+          const recommended = drivers.find((d) => d.recommended);
+          setDriverId(recommended ? recommended.id : "");
+        }
+      } catch (e) {
+        console.error("Failed to load drivers:", e);
+      }
+    }
+    loadDrivers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicleId]);
 
   const calculateDistance = async () => {
     if (!source || !destination) return;
@@ -231,20 +259,27 @@ export default function CreateTripPage() {
               iconColor="text-red-500"
             />
 
-            {/* Distance (Auto) */}
-            <div className="space-y-2 md:col-span-2 bg-gray-50 dark:bg-zinc-900 p-4 rounded-lg border border-gray-200 dark:border-zinc-800 flex items-center justify-between">
-              <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-zinc-400">Planned Distance</label>
-                <div className="text-xl font-bold text-gray-900 dark:text-white mt-1">
-                  {loadingDistance ? (
-                    <span className="flex items-center text-blue-400 text-sm"><Loader2 className="w-4 h-4 animate-spin mr-2" /> Calculating via OSRM...</span>
-                  ) : plannedDistance ? (
-                    `${plannedDistance} km`
-                  ) : (
-                    <span className="text-gray-400 dark:text-zinc-600 text-base font-normal">Enter locations to calculate</span>
-                  )}
-                </div>
-              </div>
+            {/* Planned Distance — auto-calculated via OSRM, always manually editable so a
+                failed/rate-limited geocode never blocks trip creation */}
+            <div className="space-y-2 md:col-span-2 bg-gray-50 dark:bg-zinc-900 p-4 rounded-lg border border-gray-200 dark:border-zinc-800">
+              <label className="flex items-center justify-between text-sm font-medium text-gray-700 dark:text-zinc-300">
+                <span>Planned Distance (km)</span>
+                {loadingDistance && (
+                  <span className="flex items-center text-blue-500 dark:text-blue-400 text-xs font-normal">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Calculating via OSRM...
+                  </span>
+                )}
+              </label>
+              <input
+                required
+                type="number"
+                step="0.1"
+                min="0.1"
+                placeholder="Auto-fills from source/destination, or enter manually"
+                className="w-full rounded-lg border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-4 py-3 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none shadow-sm"
+                value={plannedDistance}
+                onChange={e => setPlannedDistance(e.target.value)}
+              />
             </div>
 
             {/* Cargo Weight */}
@@ -287,27 +322,36 @@ export default function CreateTripPage() {
 
             {/* Assign Driver */}
             <div className="space-y-2 md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Assign Driver</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
+                Assign Driver
+                {!vehicleId && <span className="ml-2 text-xs font-normal text-gray-400 dark:text-zinc-500">(select a vehicle first to see license-matched drivers)</span>}
+              </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {availableDrivers.length === 0 ? (
                   <div className="col-span-full p-4 border border-gray-200 dark:border-zinc-800 rounded-lg text-gray-500 dark:text-zinc-500 text-center bg-gray-50 dark:bg-zinc-900">
-                    No drivers available.
+                    No eligible drivers{vehicleId ? " licensed for this vehicle" : ""}.
                   </div>
                 ) : availableDrivers.map(d => (
-                  <div 
+                  <div
                     key={d.id}
                     onClick={() => setDriverId(d.id)}
-                    className={`cursor-pointer border rounded-xl p-4 transition-all ${
-                      driverId === d.id 
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10' 
+                    className={`relative cursor-pointer border rounded-xl p-4 transition-all ${
+                      driverId === d.id
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10'
                         : 'border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-gray-300 dark:hover:border-zinc-600'
                     }`}
                   >
+                    {d.recommended && (
+                      <span className="absolute -top-2 -right-2 inline-flex items-center gap-1 rounded-full bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 shadow-sm">
+                        <Sparkles className="w-3 h-3" /> Recommended
+                      </span>
+                    )}
                     <div className="flex items-center justify-between">
                       <div className="font-medium text-gray-900 dark:text-white">{d.name}</div>
                       {driverId === d.id && <CheckCircle2 className="w-5 h-5 text-blue-500" />}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-zinc-500 mt-1">License: {d.licenseNumber}</div>
+                    <div className="text-xs text-gray-500 dark:text-zinc-500 mt-1">License: {d.licenseNumber} ({d.licenseCategory.replace("_", "-")})</div>
+                    <div className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">Safety score: {d.safetyScore.toFixed(1)} / 5 ({d.safetyRatingCount} trips rated)</div>
                   </div>
                 ))}
               </div>

@@ -92,6 +92,10 @@ export async function findTripById(tripId) {
   return prisma.trip.findUnique({ where: { id: tripId } });
 }
 
+export async function findVehicleById(id) {
+  return prisma.vehicle.findUnique({ where: { id } });
+}
+
 /**
  * Drivers whose license expires within the renewal-reminder window
  * (including already expired) that haven't been emailed for this expiry yet.

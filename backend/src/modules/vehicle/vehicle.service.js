@@ -218,8 +218,16 @@ export async function getVehicles(filters = {}) {
     vehicleRepository.countVehicles(where),
   ]);
 
+  // 3.7: total operational cost (Fuel + Maintenance) computed per vehicle,
+  // automatically attached to every vehicle in the response.
+  const costTotals = await vehicleRepository.getCostTotalsForVehicles(vehicles.map((v) => v.id));
+  const vehiclesWithCosts = vehicles.map((v) => ({
+    ...v,
+    ...(costTotals[v.id] ?? { totalFuelCost: 0, totalMaintenanceCost: 0, totalOperationalCost: 0 }),
+  }));
+
   return {
-    vehicles,
+    vehicles: vehiclesWithCosts,
     pagination: {
       total,
       page: parsedPage,
