@@ -28,6 +28,7 @@ export default function TripsPage() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
 
   const fetchTrips = useCallback(async () => {
     setLoading(true);
@@ -135,12 +136,25 @@ export default function TripsPage() {
                 <p className="text-sm text-zinc-550 dark:text-zinc-400">No trips match your search/filter.</p>
               </div>
             ) : (
-              <TripMap trips={filtered} />
+              <TripMap trips={filtered} selectedDriverId={selectedDriverId} />
             )}
           </div>
 
           {/* Trip Table */}
           <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 p-4 backdrop-blur-sm overflow-y-auto max-h-105">
+            {selectedDriverId && (
+              <div className="flex items-center justify-between mb-3 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50">
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                  Showing trips for selected driver
+                </span>
+                <button
+                  onClick={() => setSelectedDriverId(null)}
+                  className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline cursor-pointer"
+                >
+                  Show all
+                </button>
+              </div>
+            )}
             <table className="w-full text-left text-sm text-zinc-500 dark:text-zinc-400 border-collapse">
               <thead>
                 <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 font-medium">
@@ -151,18 +165,29 @@ export default function TripsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200/65 dark:divide-zinc-800/40">
-                {filtered.map((trip) => (
-                  <tr key={trip.id} className="hover:bg-zinc-100 dark:hover:bg-zinc-800/10 transition-colors">
-                    <td className="py-3 px-3 text-zinc-900 dark:text-white font-medium">{trip.source} &rarr; {trip.destination}</td>
-                    <td className="py-3 px-3">{trip.driver.name}</td>
-                    <td className="py-3 px-3 font-mono">{trip.vehicle.registrationNumber}</td>
-                    <td className="py-3 px-3">
-                      <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${STATUS_BADGE[trip.status]}`}>
-                        {trip.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {filtered.map((trip) => {
+                  const isSelected = selectedDriverId === trip.driver.id;
+                  return (
+                    <tr
+                      key={trip.id}
+                      onClick={() => setSelectedDriverId(isSelected ? null : trip.driver.id)}
+                      className={`cursor-pointer transition-colors ${
+                        isSelected
+                          ? "bg-blue-50 dark:bg-blue-950/30 ring-1 ring-blue-400/50"
+                          : "hover:bg-zinc-100 dark:hover:bg-zinc-800/10"
+                      }`}
+                    >
+                      <td className="py-3 px-3 text-zinc-900 dark:text-white font-medium">{trip.source} &rarr; {trip.destination}</td>
+                      <td className="py-3 px-3">{trip.driver.name}</td>
+                      <td className="py-3 px-3 font-mono">{trip.vehicle.registrationNumber}</td>
+                      <td className="py-3 px-3">
+                        <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${STATUS_BADGE[trip.status]}`}>
+                          {trip.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
                 {filtered.length === 0 && (
                   <tr>
                     <td colSpan={4} className="py-8 text-center text-zinc-500 dark:text-zinc-400">No matching trips.</td>

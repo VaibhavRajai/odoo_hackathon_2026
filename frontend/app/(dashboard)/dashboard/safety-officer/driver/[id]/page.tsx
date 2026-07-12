@@ -40,7 +40,7 @@ interface Trip {
   status: string;
   cargoWeight: number;
   plannedDistance: number;
-  driver: { name: string };
+  driver: { id: string; name: string };
   vehicle: { registrationNumber: string; name: string };
 }
 
