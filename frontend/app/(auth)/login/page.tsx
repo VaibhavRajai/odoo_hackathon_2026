@@ -54,7 +54,7 @@ export default function LoginPage() {
         {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
       </button>
 
-      <div className="w-full max-w-md space-y-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-8 backdrop-blur-xl shadow-2xl transition-all duration-200">
+      <div className="w-full max-w-md space-y-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-6 sm:p-8 backdrop-blur-xl shadow-2xl transition-all duration-200">
         <div className="text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-500 border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]">
             <KeyRound className="h-7 w-7" />
@@ -146,6 +146,18 @@ export default function LoginPage() {
             </button>
           </div>
         </form>
+
+        <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800 text-center">
+          <p className="text-xs font-semibold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider">
+            One Login, Four Roles
+          </p>
+          <div className="mt-2.5 flex flex-wrap justify-center gap-2 text-xs">
+            <span className="px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-850 text-zinc-700 dark:text-zinc-300 font-medium">Fleet Manager</span>
+            <span className="px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-850 text-zinc-700 dark:text-zinc-300 font-medium">Dispatcher</span>
+            <span className="px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-850 text-zinc-700 dark:text-zinc-300 font-medium">Safety Officer</span>
+            <span className="px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-850 text-zinc-700 dark:text-zinc-300 font-medium">Financial Analyst</span>
+          </div>
+        </div>
       </div>
     </div>
   );
