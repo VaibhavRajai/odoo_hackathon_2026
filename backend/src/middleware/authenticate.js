@@ -33,7 +33,7 @@ export async function authenticate(req, res, next) {
  * requireRole — role-based access middleware.
  * Must be used after `authenticate`.
  *
- * @param {...string} roles - Allowed role names (e.g. "Fleet Manager", "Driver").
+ * @param {...string} roles - Allowed role names (e.g. "Fleet Manager", "Dispatcher").
  *
  * @example
  * router.get("/fleet", authenticate, requireRole("Fleet Manager"), handler);

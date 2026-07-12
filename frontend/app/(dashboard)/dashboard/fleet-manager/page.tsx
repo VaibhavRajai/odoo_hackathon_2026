@@ -55,7 +55,7 @@ export default function FleetManagerDashboard() {
       <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 p-6 backdrop-blur-sm transition-colors duration-200">
         <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">Active Vehicle Monitoring</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-zinc-500 dark:text-zinc-400 border-collapse">
+          <table className="w-full min-w-[600px] text-left text-sm text-zinc-500 dark:text-zinc-400 border-collapse">
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 font-medium">
                 <th className="py-3 px-4">Vehicle ID</th>
