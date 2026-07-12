@@ -24,40 +24,40 @@ export default function FleetManagerDashboard() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Fleet Manager Dashboard</h1>
-        <p className="text-zinc-400 mt-2">Welcome back, {name || "Manager"}. Control active deployments and vehicle logs.</p>
+        <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">Fleet Manager Dashboard</h1>
+        <p className="text-zinc-550 dark:text-zinc-400 mt-2">Welcome back, {name || "Manager"}. Control active deployments and vehicle logs.</p>
       </div>
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Active Vehicles", value: "42 / 45", change: "+4 today", icon: Truck, color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
-          { label: "Active Drivers", value: "38 / 40", change: "2 on break", icon: Users, color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
-          { label: "Dispatched Routes", value: "19", change: "All in green status", icon: MapPin, color: "text-purple-500 bg-purple-500/10 border-purple-500/20" },
-          { label: "Fuel Efficiency", value: "8.4 km/L", change: "+1.2% over last week", icon: Activity, color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
+          { label: "Active Vehicles", value: "42 / 45", change: "+4 today", icon: Truck, color: "text-blue-600 dark:text-blue-500 bg-blue-500/10 border-blue-500/20" },
+          { label: "Active Drivers", value: "38 / 40", change: "2 on break", icon: Users, color: "text-emerald-600 dark:text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+          { label: "Dispatched Routes", value: "19", change: "All in green status", icon: MapPin, color: "text-purple-600 dark:text-purple-500 bg-purple-500/10 border-purple-500/20" },
+          { label: "Fuel Efficiency", value: "8.4 km/L", change: "+1.2% over last week", icon: Activity, color: "text-amber-600 dark:text-amber-500 bg-amber-500/10 border-amber-500/20" },
         ].map((item, idx) => (
-          <div key={idx} className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 backdrop-blur-sm shadow-md">
+          <div key={idx} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-6 backdrop-blur-sm shadow-sm transition-colors duration-200">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-zinc-400">{item.label}</span>
+              <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{item.label}</span>
               <div className={`flex h-10 w-10 items-center justify-center rounded-lg border ${item.color}`}>
                 <item.icon className="h-5 w-5" />
               </div>
             </div>
             <div className="mt-4">
-              <span className="text-2xl font-bold text-white">{item.value}</span>
-              <span className="block text-xs text-zinc-500 mt-1">{item.change}</span>
+              <span className="text-2xl font-bold text-zinc-900 dark:text-white">{item.value}</span>
+              <span className="block text-xs text-zinc-550 dark:text-zinc-500 mt-1">{item.change}</span>
             </div>
           </div>
         ))}
       </div>
 
       {/* Fleet Monitoring Section */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/20 p-6 backdrop-blur-sm">
-        <h2 className="text-lg font-bold text-white mb-4">Active Vehicle Monitoring</h2>
+      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 p-6 backdrop-blur-sm transition-colors duration-200">
+        <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">Active Vehicle Monitoring</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-zinc-400 border-collapse">
+          <table className="w-full text-left text-sm text-zinc-500 dark:text-zinc-400 border-collapse">
             <thead>
-              <tr className="border-b border-zinc-800 text-zinc-300 font-medium">
+              <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 font-medium">
                 <th className="py-3 px-4">Vehicle ID</th>
                 <th className="py-3 px-4">Driver</th>
                 <th className="py-3 px-4">Destination</th>
@@ -65,14 +65,14 @@ export default function FleetManagerDashboard() {
                 <th className="py-3 px-4">Battery/Fuel</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/40">
+            <tbody className="divide-y divide-zinc-200/65 dark:divide-zinc-800/40">
               {[
-                { id: "VT-902", driver: "Raj Patel", dest: "Terminal A - Cargo Central", status: "Transit", statusCol: "text-blue-400 bg-blue-500/10 border-blue-500/20", energy: "82%" },
-                { id: "VT-114", driver: "Sarah Jenkins", dest: "Depot West", status: "Active Delivery", statusCol: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20", energy: "64%" },
-                { id: "VT-844", driver: "John Doe", dest: "Loading Bay C", status: "Loading", statusCol: "text-amber-400 bg-amber-500/10 border-amber-500/20", energy: "98%" },
+                { id: "VT-902", driver: "Raj Patel", dest: "Terminal A - Cargo Central", status: "Transit", statusCol: "text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20", energy: "82%" },
+                { id: "VT-114", driver: "Sarah Jenkins", dest: "Depot West", status: "Active Delivery", statusCol: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20", energy: "64%" },
+                { id: "VT-844", driver: "John Doe", dest: "Loading Bay C", status: "Loading", statusCol: "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20", energy: "98%" },
               ].map((row, idx) => (
-                <tr key={idx} className="hover:bg-zinc-800/10 transition-colors">
-                  <td className="py-3.5 px-4 font-semibold text-white">{row.id}</td>
+                <tr key={idx} className="hover:bg-zinc-100 dark:hover:bg-zinc-800/10 transition-colors">
+                  <td className="py-3.5 px-4 font-semibold text-zinc-900 dark:text-white">{row.id}</td>
                   <td className="py-3.5 px-4">{row.driver}</td>
                   <td className="py-3.5 px-4">{row.dest}</td>
                   <td className="py-3.5 px-4">
@@ -80,7 +80,7 @@ export default function FleetManagerDashboard() {
                       {row.status}
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-white font-medium">{row.energy}</td>
+                  <td className="py-3.5 px-4 text-zinc-900 dark:text-white font-medium">{row.energy}</td>
                 </tr>
               ))}
             </tbody>
