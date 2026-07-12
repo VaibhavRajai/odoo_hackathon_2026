@@ -22,25 +22,37 @@ export async function generateOTP(userId, email, name) {
 
   await redis.setex(key, OTP_EXPIRY_SECONDS, JSON.stringify({ otp, attempts: 0 }));
 
-  await mailer.sendMail({
-    from: process.env.SMTP_FROM,
-    to: email,
-    subject: "TransitOps — Password Reset OTP",
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 32px; border: 1px solid #e5e7eb; border-radius: 8px;">
-        <h2 style="margin: 0 0 8px; color: #111827;">Password Reset</h2>
-        <p style="color: #6b7280; margin: 0 0 24px;">Hi ${name}, use the code below to reset your TransitOps password.</p>
-        <div style="font-size: 40px; font-weight: 700; letter-spacing: 14px; color: #2563eb; padding: 20px; background: #eff6ff; border-radius: 8px; text-align: center;">
-          ${otp}
+  try {
+    await mailer.sendMail({
+      from: process.env.SMTP_FROM,
+      to: email,
+      subject: "TransitOps — Password Reset OTP",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 32px; border: 1px solid #e5e7eb; border-radius: 8px;">
+          <h2 style="margin: 0 0 8px; color: #111827;">Password Reset</h2>
+          <p style="color: #6b7280; margin: 0 0 24px;">Hi ${name}, use the code below to reset your TransitOps password.</p>
+          <div style="font-size: 40px; font-weight: 700; letter-spacing: 14px; color: #2563eb; padding: 20px; background: #eff6ff; border-radius: 8px; text-align: center;">
+            ${otp}
+          </div>
+          <p style="color: #9ca3af; font-size: 13px; margin-top: 24px;">
+            This code expires in <strong>10 minutes</strong>. If you did not request this, you can safely ignore this email.
+          </p>
         </div>
-        <p style="color: #9ca3af; font-size: 13px; margin-top: 24px;">
-          This code expires in <strong>10 minutes</strong>. If you did not request this, you can safely ignore this email.
-        </p>
-      </div>
-    `,
-  });
+      `,
+    });
+    logger.info(LOG_EVENTS.OTP_GENERATED, { userId, email });
+  } catch (mailError) {
+    logger.error("Failed to send OTP email: " + mailError.message);
+  }
 
-  logger.info(LOG_EVENTS.OTP_GENERATED, { userId, email });
+  // Log OTP to server console to guarantee demoability under poor network / missing SMTP config
+  console.log(`\n==================================================`);
+  console.log(`[HACKATHON OTP DEBUG - BYPASS SMTP]`);
+  console.log(`User ID:  ${userId}`);
+  console.log(`Email:    ${email}`);
+  console.log(`Name:     ${name}`);
+  console.log(`OTP Code: ${otp}`);
+  console.log(`==================================================\n`);
 }
 
 /**

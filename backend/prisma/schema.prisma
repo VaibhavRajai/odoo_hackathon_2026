@@ -66,13 +66,15 @@ model Vehicle {
   acquisitionCost     Float
   status              VehicleStatus @default(AVAILABLE)
 
+  trips               Trip[]
+  maintenances        Maintenance[]
+
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
-  trips               Trip[]
-
   @@index([type])
   @@index([status])
+  @@map("vehicles")
 }
 
 /**
@@ -191,4 +193,45 @@ model Trip {
   @@index([status])
   @@index([driverId])
   @@index([vehicleId])
+}
+
+/**
+ * MaintenanceStatus
+ *
+ * ACTIVE - Maintenance is in progress. Vehicle is IN_SHOP.
+ * CLOSED - Maintenance is completed. Vehicle is restored to AVAILABLE.
+ */
+enum MaintenanceStatus {
+  ACTIVE
+  CLOSED
+}
+
+/**
+ * Maintenance
+ *
+ * Tracks all maintenance records for TransitOps vehicles.
+ * A single vehicle can have multiple maintenance records over time.
+ *
+ * Creating an ACTIVE record sets the vehicle status to IN_SHOP.
+ * Closing (CLOSED) the record restores the vehicle to AVAILABLE.
+ */
+model Maintenance {
+  id            String            @id @default(uuid())
+  vehicleId     String
+  vehicle       Vehicle           @relation(fields: [vehicleId], references: [id])
+
+  type          String            // e.g. "Oil Change", "Brake Repair"
+  description   String?           // Optional extended description
+  cost          Float             @default(0)
+  startDate     DateTime
+  completedDate DateTime?         // Set when status transitions to CLOSED
+
+  status        MaintenanceStatus @default(ACTIVE)
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([vehicleId])
+  @@index([status])
+  @@map("maintenances")
 }

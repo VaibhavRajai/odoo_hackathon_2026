@@ -34,25 +34,32 @@ export async function createVehicle(vehicleData) {
 }
 
 /**
- * Retrieve vehicles from the master vehicle registry.
- *
- * Supports optional filtering by:
- * - Vehicle type
- * - Vehicle status
- * - Registration number search
- *
- * The filter object is prepared by the service layer and passed
- * to this repository for database execution.
+ * Retrieve vehicles from the master vehicle registry with pagination.
  *
  * @param {Object} where - Prisma filtering conditions.
+ * @param {number} skip - Offset.
+ * @param {number} take - Limit.
  * @returns {Promise<Array>} List of matching vehicles.
  */
-export async function findVehicles(where = {}) {
+export async function findVehicles(where = {}, skip = 0, take = 10) {
   return prisma.vehicle.findMany({
     where,
-
+    skip,
+    take,
     orderBy: {
       createdAt: "desc",
     },
   });
 }
+
+/**
+ * Count total number of vehicles matching criteria.
+ *
+ * @param {Object} where - Prisma filtering conditions.
+ * @returns {Promise<number>}
+ */
+export async function countVehicles(where = {}) {
+  return prisma.vehicle.count({
+    where,
+  });
+}

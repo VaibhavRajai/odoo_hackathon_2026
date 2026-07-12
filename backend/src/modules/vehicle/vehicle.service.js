@@ -155,7 +155,11 @@ export async function registerVehicle(vehicleData) {
  * @throws {Error} When an invalid status is provided.
  */
 export async function getVehicles(filters = {}) {
-  const { type, status, search } = filters;
+  const { type, status, search, page = 1, limit = 10 } = filters;
+
+  const parsedPage = Math.max(1, parseInt(page, 10) || 1);
+  const parsedLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
+  const skip = (parsedPage - 1) * parsedLimit;
 
   /**
    * Valid vehicle statuses defined by the TransitOps requirements.
@@ -169,17 +173,11 @@ export async function getVehicles(filters = {}) {
 
   /**
    * Build the Prisma WHERE condition dynamically.
-   *
-   * An empty object means:
-   * "Return all vehicles."
    */
   const where = {};
 
   /**
    * Apply vehicle type filter.
-   *
-   * Example:
-   * GET /api/vehicles?type=Van
    */
   if (type && type !== "All") {
     where.type = {
@@ -190,12 +188,6 @@ export async function getVehicles(filters = {}) {
 
   /**
    * Apply vehicle status filter.
-   *
-   * The frontend may send values such as:
-   * AVAILABLE
-   * ON_TRIP
-   * IN_SHOP
-   * RETIRED
    */
   if (status && status !== "All") {
     const normalizedStatus = status.trim().toUpperCase();
@@ -213,11 +205,6 @@ export async function getVehicles(filters = {}) {
 
   /**
    * Apply registration number search.
-   *
-   * Example:
-   * GET /api/vehicles?search=GJ01
-   *
-   * This performs a partial, case-insensitive search.
    */
   if (search?.trim()) {
     where.registrationNumber = {
@@ -226,5 +213,18 @@ export async function getVehicles(filters = {}) {
     };
   }
 
-  return vehicleRepository.findVehicles(where);
+  const [vehicles, total] = await Promise.all([
+    vehicleRepository.findVehicles(where, skip, parsedLimit),
+    vehicleRepository.countVehicles(where),
+  ]);
+
+  return {
+    vehicles,
+    pagination: {
+      total,
+      page: parsedPage,
+      limit: parsedLimit,
+      totalPages: Math.ceil(total / parsedLimit),
+    },
+  };
 }
