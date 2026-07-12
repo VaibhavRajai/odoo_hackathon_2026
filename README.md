@@ -1,3 +1,5 @@
+# Demo
+https://drive.google.com/drive/folders/1lqExGTuHkJCqFgH7I52tUsdgIUW_ssYG
 # TransitOps
 
 ### Smart Transport Operations Platform
@@ -63,7 +65,7 @@ The following status tracks our modular milestones:
 | :--- | :--- | :--- |
 | **Driver Management** | ✅ *Implemented* | Introduced `Driver` entity with license numbers, expiration dates, and compliance states. |
 | **Trip Dispatch** | ✅ *Implemented* | Added `Trip` model linking drivers, vehicles, cargo weights, routes, and dispatch status transitions. |
-| **Fuel Tracking** | 📋 *Planned* | Create `FuelLog` model to track transactions, efficiency metrics, and odometer updates. |
+| **Fuel Tracking** | ✅ *Implemented* | Create `FuelLog` model to track transactions, efficiency metrics, and odometer updates. |
 | **Telemetry Charts** | ✅ *Implemented* | Incorporated interactive Chart.js widgets to plot fuel, cost variance, and fleet utilization trends. |
 | **Leaflet Maps** | ✅ *Implemented* | Integrated Leaflet.js and OpenStreetMap to render dispatch locations and track active vehicle routes. |
 | **Excel/PDF Export** | ✅ *Implemented* | Added backend Puppeteer worker services to download audit-ready compliance sheets and financial summaries. |
@@ -166,3 +168,4 @@ Security tokens, port configurations, and system endpoints are decoupled from co
    - Access the API: `http://localhost:5000/health`
    - Access pgAdmin: `http://localhost:5050`
    - Access Redis: `localhost:6379`
+  
