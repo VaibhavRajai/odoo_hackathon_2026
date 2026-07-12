@@ -3,6 +3,10 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRouter from "./modules/auth/auth.routes.js";
+import vehiclesRouter from "./modules/vehicles/vehicles.routes.js";
+import driversRouter from "./modules/drivers/drivers.routes.js";
+import tripsRouter from "./modules/trips/trips.routes.js";
+import maintenanceRouter from "./modules/maintenance/maintenance.routes.js";
 
 const app = express();
 
@@ -18,6 +22,10 @@ app.use(cookieParser());
 
 // ─── Routes ─────────────────────────────────────────────────────────────────
 app.use("/api/auth", authRouter);
+app.use("/api/vehicles", vehiclesRouter);
+app.use("/api/drivers", driversRouter);
+app.use("/api/trips", tripsRouter);
+app.use("/api/maintenance", maintenanceRouter);
 
 // ─── Health Check ────────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {

@@ -28,9 +28,110 @@ model User {
   name         String
   roleId       String
   role         Role     @relation(fields: [roleId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  driverProfile  DriverProfile?
 
   @@index([email])
   @@map("users")
+}
+
+// ─── Vehicle ─────────────────────────────────────────────────────────────────
+model Vehicle {
+  id               String   @id @default(cuid())
+  registrationNum  String   @unique
+  name             String
+  type             String
+  maxLoadCapacity  Float
+  odometer         Float    @default(0)
+  acquisitionCost  Float?
+  status           String   @default("Available") // Available, On Trip, In Shop, Retired
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  trips            Trip[]
+  fuelLogs         FuelLog[]
+  maintenanceLogs  MaintenanceLog[]
+
+  @@map("vehicles")
+}
+
+// ─── MaintenanceLog ──────────────────────────────────────────────────────────
+model MaintenanceLog {
+  id          String   @id @default(cuid())
+  type        String   // e.g., Oil Change, Repair, Tire Replacement
+  description String?
+  cost        Float
+  status      String   @default("Active") // Active, Completed
+  date        DateTime @default(now())
+  
+  vehicleId   String
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("maintenance_logs")
+}
+
+// ─── DriverProfile ───────────────────────────────────────────────────────────
+model DriverProfile {
+  id             String   @id @default(cuid())
+  name           String
+  licenseNumber  String   @unique
+  licenseCategory String?
+  licenseExpiry  DateTime?
+  contactNumber  String?
+  safetyScore    Float?
+  status         String   @default("Available") // Available, On Trip, Off Duty, Suspended
+  userId         String?  @unique
+  user           User?    @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  trips          Trip[]
+
+  @@map("driver_profiles")
+}
+
+// ─── Trip ────────────────────────────────────────────────────────────────────
+model Trip {
+  id              String   @id @default(cuid())
+  source          String
+  destination     String
+  cargoWeight     Float
+  plannedDistance Float?
+  status          String   @default("Draft") // Draft, Dispatched, Completed, Cancelled
+  
+  vehicleId       String
+  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id])
+  
+  driverId        String
+  driver          DriverProfile @relation(fields: [driverId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  fuelLogs        FuelLog[]
+
+  @@map("trips")
+}
+
+// ─── FuelLog ─────────────────────────────────────────────────────────────────
+model FuelLog {
+  id         String   @id @default(cuid())
+  liters     Float
+  cost       Float
+  date       DateTime @default(now())
+  
+  vehicleId  String
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id])
+  
+  tripId     String?
+  trip       Trip?    @relation(fields: [tripId], references: [id])
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("fuel_logs")
 }
