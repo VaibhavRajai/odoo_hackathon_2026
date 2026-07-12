@@ -25,12 +25,18 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "express-rate-limit": "^7.5.0",
     "ioredis": "^5.6.1",
     "nodemailer": "^7.0.3",
     "pg": "^8.13.3",
     "prisma": "^7.8.0",
-    "rate-limit-redis": "^4.2.0"
+    "puppeteer": "^25.3.0",
+    "rate-limit-redis": "^4.2.0",
+    "xlsx": "^0.18.5"
+  },
+  "allowScripts": {
+    "puppeteer@25.3.0": true
   }
 }

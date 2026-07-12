@@ -286,28 +286,18 @@ export default function VehicleRegistryPage() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       
-      {/* Premium Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-900 to-indigo-950 p-8 sm:p-10 shadow-xl border border-indigo-900/40">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/20 px-3 py-1 text-xs font-semibold text-blue-300 border border-blue-400/20 mb-3">
-              <Sparkles className="h-3 w-3" /> System Registry Active
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-none">
-              Vehicle Registry
-            </h1>
-            <p className="text-blue-100/70 mt-2 max-w-xl text-sm sm:text-base font-medium">
-              Manage transit fleet assets, monitor real-time availability, and coordinate garage maintenance logs.
-            </p>
-          </div>
-          <button
-            onClick={handleOpenModal}
-            className="flex items-center justify-center gap-2 rounded-xl bg-blue-500 hover:bg-blue-400 text-white px-6 py-3.5 text-sm font-bold shadow-[0_4px_20px_rgba(37,99,235,0.3)] transition-all hover:translate-y-[-2px] active:translate-y-0 cursor-pointer self-start"
-          >
-            <Plus className="h-5 w-5" /> Add Vehicle
-          </button>
+      {/* Header Block */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">Vehicle Registry</h1>
+          <p className="text-zinc-555 dark:text-zinc-400 mt-2">Manage and monitor the transit fleet master database.</p>
         </div>
+        <button
+          onClick={handleOpenModal}
+          className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 text-sm font-semibold shadow-[0_0_15px_rgba(37,99,235,0.2)] transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer self-start sm:self-center"
+        >
+          <Plus className="h-4 w-4" /> Add Vehicle
+        </button>
       </div>
 
       {/* Metric Cards Grid */}
@@ -428,7 +418,53 @@ export default function VehicleRegistryPage() {
           </div>
         ) : (
           <div>
-            <div className="overflow-x-auto">
+            {/* Mobile Card List (Visible on mobile/tablet, hidden on desktop) */}
+            <div className="block md:hidden divide-y divide-zinc-200/60 dark:divide-zinc-800/40">
+              {vehicles.map((vehicle) => {
+                const statusConfig = getStatusDetails(vehicle.status);
+                const StatusIcon = statusConfig.icon;
+                return (
+                  <div key={vehicle.id} className="p-5 space-y-3 bg-white dark:bg-zinc-900/10 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/5 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-zinc-900 dark:text-white tracking-wider font-mono text-base">
+                        {vehicle.registrationNumber}
+                      </span>
+                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusConfig.bg}`}>
+                        <StatusIcon className="h-3 w-3" />
+                        {vehicle.status.replace("_", " ")}
+                      </span>
+                    </div>
+
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-sm font-semibold text-zinc-850 dark:text-zinc-250">
+                        {vehicle.name}
+                      </span>
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                        {vehicle.type}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 pt-2 text-xs border-t border-zinc-100 dark:border-zinc-800/50">
+                      <div>
+                        <span className="block text-[10px] uppercase font-bold text-zinc-400">Capacity</span>
+                        <span className="font-semibold text-zinc-800 dark:text-zinc-300">{formatNumber(vehicle.maxLoadCapacity)} kg</span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] uppercase font-bold text-zinc-400">Odometer</span>
+                        <span className="font-semibold text-zinc-800 dark:text-zinc-300">{formatNumber(vehicle.odometer)} km</span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] uppercase font-bold text-zinc-450">Cost</span>
+                        <span className="font-bold text-zinc-900 dark:text-white">{formatCurrency(vehicle.acquisitionCost)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full min-w-[800px] text-left text-sm text-zinc-555 dark:text-zinc-400 border-collapse">
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/20 text-zinc-800 dark:text-zinc-300 font-semibold">

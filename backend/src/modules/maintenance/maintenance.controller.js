@@ -73,3 +73,23 @@ export async function closeMaintenanceRecord(req, res, next) {
     next(error);
   }
 }
+
+/**
+ * Update an existing maintenance record.
+ *
+ * @route   PUT /api/maintenance/:id
+ * @access  Private — Fleet Manager only
+ */
+export async function updateMaintenanceRecord(req, res, next) {
+  try {
+    const maintenance = await maintenanceService.updateMaintenance(req.params.id, req.body);
+
+    return res.status(200).json({
+      success: true,
+      message: "Maintenance record updated successfully.",
+      data: maintenance,
+    });
+  } catch (error) {
+    next(error);
+  }
+}

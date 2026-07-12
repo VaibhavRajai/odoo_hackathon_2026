@@ -294,3 +294,211 @@ export async function closeMaintenance(maintenanceId) {
 
   return closed;
 }
+
+/**
+ * Update an existing maintenance record at any time.
+ * Automatically synchronizes related vehicle statuses atomically.
+ *
+ * @param {string} id - Maintenance record UUID.
+ * @param {Object} data - Update data.
+ * @returns {Promise<Object>} Updated maintenance record with vehicle details.
+ */
+export async function updateMaintenance(id, data) {
+  const { vehicleId, type, description, cost, startDate, status } = data;
+
+  if (!id?.trim()) {
+    const error = new Error("maintenance id is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // 1. Fetch existing record
+  const record = await prisma.maintenance.findUnique({
+    where: { id: id.trim() },
+    include: { vehicle: true }
+  });
+  if (!record) {
+    const error = new Error("Maintenance record not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const oldVehicleId = record.vehicleId;
+  const oldStatus = record.status;
+
+  const targetVehicleId = vehicleId?.trim() || oldVehicleId;
+  const targetStatus = status?.trim().toUpperCase() || oldStatus;
+
+  // 2. Validate input fields
+  if (cost !== undefined && cost !== null && cost !== "") {
+    const parsedCost = Number(cost);
+    if (!Number.isFinite(parsedCost) || parsedCost < 0) {
+      const error = new Error("Cost must be a number greater than or equal to 0.");
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  if (startDate) {
+    const parsedStartDate = new Date(startDate);
+    if (isNaN(parsedStartDate.getTime())) {
+      const error = new Error("Start date must be a valid date.");
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  if (status) {
+    if (!VALID_MAINTENANCE_STATUSES.includes(targetStatus)) {
+      const error = new Error("Status must be ACTIVE or CLOSED.");
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  // 3. If vehicle changes, or status changes, check constraints
+  const isVehicleChanged = targetVehicleId !== oldVehicleId;
+  const isStatusChanged = targetStatus !== oldStatus;
+
+  let targetVehicle = record.vehicle;
+  if (isVehicleChanged) {
+    targetVehicle = await prisma.vehicle.findUnique({
+      where: { id: targetVehicleId }
+    });
+    if (!targetVehicle) {
+      const error = new Error("Target vehicle not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (targetVehicle.status === "RETIRED") {
+      const error = new Error("Cannot assign maintenance to a RETIRED vehicle.");
+      error.statusCode = 422;
+      throw error;
+    }
+    if (targetVehicle.status === "ON_TRIP") {
+      const error = new Error("Cannot assign maintenance to an ON_TRIP vehicle.");
+      error.statusCode = 422;
+      throw error;
+    }
+  }
+
+  // If status is ACTIVE, check if target vehicle already has an active record (excluding this record itself)
+  if (targetStatus === "ACTIVE") {
+    const otherActiveCount = await prisma.maintenance.count({
+      where: {
+        vehicleId: targetVehicleId,
+        status: "ACTIVE",
+        NOT: { id: id.trim() }
+      }
+    });
+    if (otherActiveCount > 0) {
+      const error = new Error("Target vehicle already has an ACTIVE maintenance record.");
+      error.statusCode = 409;
+      throw error;
+    }
+  }
+
+  // Prepare updates to run in transaction
+  const operations = [];
+
+  // Update maintenance record itself
+  const updateData = {};
+  if (vehicleId) updateData.vehicleId = targetVehicleId;
+  if (type) updateData.type = type.trim();
+  if (description !== undefined) updateData.description = description?.trim() || null;
+  if (cost !== undefined && cost !== null && cost !== "") {
+    updateData.cost = Number(cost);
+  }
+  if (startDate) updateData.startDate = new Date(startDate);
+  if (status) {
+    updateData.status = targetStatus;
+    // Set completedDate to now if closing, or null if reopening
+    if (targetStatus === "CLOSED") {
+      updateData.completedDate = new Date();
+    } else {
+      updateData.completedDate = null;
+    }
+  }
+
+  operations.push(
+    prisma.maintenance.update({
+      where: { id: id.trim() },
+      data: updateData,
+      include: {
+        vehicle: {
+          select: {
+            id: true,
+            registrationNumber: true,
+            name: true,
+            type: true,
+            status: true
+          }
+        }
+      }
+    })
+  );
+
+  // Determine vehicle status changes
+  // Old vehicle:
+  // If vehicle is changed, or status becomes CLOSED:
+  // The old vehicle no longer has this active maintenance.
+  // We check if it has other active maintenance records (excluding this one).
+  // If it doesn't, and its status is IN_SHOP, we set it to AVAILABLE (unless it's retired).
+  if (isVehicleChanged || (isStatusChanged && targetStatus === "CLOSED")) {
+    if (record.vehicle.status !== "RETIRED") {
+      // Find other active maintenance records
+      const activeCount = await prisma.maintenance.count({
+        where: {
+          vehicleId: oldVehicleId,
+          status: "ACTIVE",
+          NOT: { id: id.trim() }
+        }
+      });
+      if (activeCount === 0) {
+        operations.push(
+          prisma.vehicle.update({
+            where: { id: oldVehicleId },
+            data: { status: "AVAILABLE" }
+          })
+        );
+      }
+    }
+  }
+
+  // New/Target vehicle:
+  // If status is ACTIVE, we set target vehicle to IN_SHOP (unless it is retired).
+  if (targetStatus === "ACTIVE" && targetVehicle.status !== "RETIRED") {
+    operations.push(
+      prisma.vehicle.update({
+        where: { id: targetVehicleId },
+        data: { status: "IN_SHOP" }
+      })
+    );
+  } else if (targetStatus === "CLOSED" && targetVehicle.status !== "RETIRED") {
+    // If status becomes CLOSED, we set target vehicle to AVAILABLE if it doesn't have other active maintenance records
+    const activeCount = await prisma.maintenance.count({
+      where: {
+        vehicleId: targetVehicleId,
+        status: "ACTIVE",
+        NOT: { id: id.trim() }
+      }
+    });
+    if (activeCount === 0) {
+      operations.push(
+        prisma.vehicle.update({
+          where: { id: targetVehicleId },
+          data: { status: "AVAILABLE" }
+        })
+      );
+    }
+  }
+
+  // Run transaction
+  const results = await prisma.$transaction(operations);
+  const updatedRecord = results[0]; // first operation is the update
+
+  // Invalidate Cache
+  await invalidateMaintenanceCache();
+
+  return updatedRecord;
+}

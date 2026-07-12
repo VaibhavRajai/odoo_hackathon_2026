@@ -2,90 +2,72 @@
 
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "../../../api-client";
-import { Truck, Users, MapPin, Activity } from "lucide-react";
+import { Truck, Wrench, ChevronRight, Settings } from "lucide-react";
 
-export default function FleetManagerDashboard() {
-  const [name, setName] = useState("");
+export default function FleetManagerOverview() {
+  const [userName, setUserName] = useState("");
 
   useEffect(() => {
-    async function loadUser() {
-      try {
-        const res = await apiFetch("/api/auth/me");
-        if (res.success) {
-          setName(res.data.name);
-        }
-      } catch {
-        // Handled by layout redirection
-      }
-    }
-    loadUser();
+    apiFetch("/api/auth/me")
+      .then((res) => res.success && setUserName(res.data.name))
+      .catch(() => {});
   }, []);
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-8 max-w-4xl mx-auto">
+      {/* Welcome header */}
       <div>
-        <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">Fleet Manager Dashboard</h1>
-        <p className="text-zinc-550 dark:text-zinc-400 mt-2">Welcome back, {name || "Manager"}. Control active deployments and vehicle logs.</p>
+        <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
+          Fleet Management Center
+        </h1>
+        <p className="text-zinc-550 dark:text-zinc-400 mt-2">
+          Welcome back, {userName || "Manager"}. Select a module below to manage fleet operations.
+        </p>
       </div>
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "Active Vehicles", value: "42 / 45", change: "+4 today", icon: Truck, color: "text-blue-600 dark:text-blue-500 bg-blue-500/10 border-blue-500/20" },
-          { label: "Active Drivers", value: "38 / 40", change: "2 on break", icon: Users, color: "text-emerald-600 dark:text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
-          { label: "Dispatched Routes", value: "19", change: "All in green status", icon: MapPin, color: "text-purple-600 dark:text-purple-500 bg-purple-500/10 border-purple-500/20" },
-          { label: "Fuel Efficiency", value: "8.4 km/L", change: "+1.2% over last week", icon: Activity, color: "text-amber-600 dark:text-amber-500 bg-amber-500/10 border-amber-500/20" },
-        ].map((item, idx) => (
-          <div key={idx} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-6 backdrop-blur-sm shadow-sm transition-colors duration-200">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{item.label}</span>
-              <div className={`flex h-10 w-10 items-center justify-center rounded-lg border ${item.color}`}>
-                <item.icon className="h-5 w-5" />
-              </div>
+      {/* Navigation cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Vehicle Registry Card */}
+        <a
+          href="/dashboard/fleet-manager/vehicles"
+          className="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-6 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md hover:border-blue-500/50 dark:hover:border-blue-500/30 flex flex-col justify-between h-48"
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-500">
+              <Truck className="h-6 w-6" />
             </div>
-            <div className="mt-4">
-              <span className="text-2xl font-bold text-zinc-900 dark:text-white">{item.value}</span>
-              <span className="block text-xs text-zinc-550 dark:text-zinc-500 mt-1">{item.change}</span>
-            </div>
+            <ChevronRight className="h-5 w-5 text-zinc-400 group-hover:text-blue-550 group-hover:translate-x-1 transition-all" />
           </div>
-        ))}
-      </div>
+          <div>
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-white group-hover:text-blue-550 transition-colors">
+              Vehicle Registry
+            </h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+              Add new commercial vehicles, view details, track registration numbers, and manage lifecycle statuses.
+            </p>
+          </div>
+        </a>
 
-      {/* Fleet Monitoring Section */}
-      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 p-6 backdrop-blur-sm transition-colors duration-200">
-        <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">Active Vehicle Monitoring</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px] text-left text-sm text-zinc-500 dark:text-zinc-400 border-collapse">
-            <thead>
-              <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 font-medium">
-                <th className="py-3 px-4">Vehicle ID</th>
-                <th className="py-3 px-4">Driver</th>
-                <th className="py-3 px-4">Destination</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Battery/Fuel</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-200/65 dark:divide-zinc-800/40">
-              {[
-                { id: "VT-902", driver: "Raj Patel", dest: "Terminal A - Cargo Central", status: "Transit", statusCol: "text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20", energy: "82%" },
-                { id: "VT-114", driver: "Sarah Jenkins", dest: "Depot West", status: "Active Delivery", statusCol: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20", energy: "64%" },
-                { id: "VT-844", driver: "John Doe", dest: "Loading Bay C", status: "Loading", statusCol: "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20", energy: "98%" },
-              ].map((row, idx) => (
-                <tr key={idx} className="hover:bg-zinc-100 dark:hover:bg-zinc-800/10 transition-colors">
-                  <td className="py-3.5 px-4 font-semibold text-zinc-900 dark:text-white">{row.id}</td>
-                  <td className="py-3.5 px-4">{row.driver}</td>
-                  <td className="py-3.5 px-4">{row.dest}</td>
-                  <td className="py-3.5 px-4">
-                    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${row.statusCol}`}>
-                      {row.status}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-zinc-900 dark:text-white font-medium">{row.energy}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Maintenance Logs Card */}
+        <a
+          href="/dashboard/fleet-manager/maintenance"
+          className="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-6 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md hover:border-amber-500/50 dark:hover:border-amber-500/30 flex flex-col justify-between h-48"
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-500">
+              <Wrench className="h-6 w-6" />
+            </div>
+            <ChevronRight className="h-5 w-5 text-zinc-400 group-hover:text-amber-550 group-hover:translate-x-1 transition-all" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-white group-hover:text-amber-550 transition-colors">
+              Maintenance Logs
+            </h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+              Schedule repair logs, track active work orders, audit completed repairs, and transition vehicles back to service.
+            </p>
+          </div>
+        </a>
       </div>
     </div>
   );
