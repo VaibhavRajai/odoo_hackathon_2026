@@ -34,3 +34,24 @@ model User {
   @@index([email])
   @@map("users")
 }
+
+enum VehicleStatus {
+  AVAILABLE
+  ON_TRIP
+  IN_SHOP
+  RETIRED
+}
+
+model Vehicle {
+  id                  String        @id @default(uuid())
+  registrationNumber  String        @unique
+  name                String
+  type                String
+  maxLoadCapacity     Float
+  odometer            Float
+  acquisitionCost     Float
+  status              VehicleStatus @default(AVAILABLE)
+
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+}
